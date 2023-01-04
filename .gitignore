@@ -73,6 +73,7 @@ m4/lt~obsolete.m4
 # Build artifacts
 #==============================================================================#
 #m4/
+cmake-build-relwithdebinfo/
 build/
 duckdb_benchmark_data/
 #*.m4

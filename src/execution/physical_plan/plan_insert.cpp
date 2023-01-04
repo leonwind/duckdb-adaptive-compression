@@ -27,6 +27,7 @@ bool PhysicalPlanGenerator::PreserveInsertionOrder(PhysicalOperator &plan) {
 }
 
 bool PhysicalPlanGenerator::UseBatchIndex(ClientContext &context, PhysicalOperator &plan) {
+	// TODO: always preserve order if query contains ORDER BY
 	auto &scheduler = TaskScheduler::GetScheduler(context);
 	if (scheduler.NumberOfThreads() == 1) {
 		// batch index usage only makes sense if we are using multiple threads
@@ -49,7 +50,7 @@ unique_ptr<PhysicalOperator> PhysicalPlanGenerator::CreatePlan(LogicalInsert &op
 		D_ASSERT(op.children.size() == 1);
 		plan = CreatePlan(*op.children[0]);
 	}
-	dependencies.insert(op.table);
+	dependencies.AddDependency(op.table);
 
 	bool parallel_streaming_insert = !PreserveInsertionOrder(*plan);
 	bool use_batch_index = UseBatchIndex(*plan);

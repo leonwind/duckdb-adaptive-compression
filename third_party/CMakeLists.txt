@@ -11,6 +11,7 @@ if(NOT AMALGAMATION_BUILD)
   add_subdirectory(fastpforlib)
   add_subdirectory(mbedtls)
   add_subdirectory(fsst)
+  add_subdirectory(sdsl-lite/include)
 endif()
 
 if(NOT WIN32

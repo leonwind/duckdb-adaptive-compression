@@ -43,6 +43,7 @@ class Vector {
 	friend struct StructVector;
 	friend struct UnionVector;
 	friend struct SequenceVector;
+	friend struct SuccinctIntVector;
 
 	friend class DataChunk;
 	friend class VectorCacheBuffer;
@@ -463,6 +464,10 @@ struct SequenceVector {
 		int64_t sequence_count;
 		GetSequence(vector, start, increment, sequence_count);
 	}
+};
+
+struct SuccinctIntVector {
+
 };
 
 } // namespace duckdb

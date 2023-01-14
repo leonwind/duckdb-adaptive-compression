@@ -17,7 +17,7 @@
 #include "duckdb/common/types/value.hpp"
 #include "duckdb/common/fsst.hpp"
 #include "fsst.h"
-#include "sdsl/int_vector.hpp"
+#include "sdsl/vectors.hpp"
 
 #include <cstring> // strlen() on Solaris
 

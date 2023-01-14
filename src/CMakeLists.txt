@@ -60,8 +60,11 @@ else()
   add_subdirectory(transaction)
   add_subdirectory(verification)
 
+  file(GLOB sdslLib ${CMAKE_CURRENT_SOURCE_DIR}/../third_party/sdsl/lib/*.a)
+
   set(DUCKDB_LINK_LIBS
       ${DUCKDB_SYSTEM_LIBS}
+      ${sdslLib}
       duckdb_fsst
       duckdb_fmt
       duckdb_pg_query

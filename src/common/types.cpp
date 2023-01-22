@@ -318,6 +318,18 @@ bool TypeIsNumeric(PhysicalType type) {
 bool TypeIsInteger(PhysicalType type) {
 	return (type >= PhysicalType::UINT8 && type <= PhysicalType::INT64) || type == PhysicalType::INT128;
 }
+bool TypeIsUInteger(PhysicalType type) {
+	switch(type) {
+	case PhysicalType::UINT8:
+	case PhysicalType::UINT16:
+	case PhysicalType::UINT32:
+	case PhysicalType::UINT64:
+		return true;
+	default:
+		return false;
+	}
+}
+
 
 // LCOV_EXCL_START
 string LogicalTypeIdToString(LogicalTypeId id) {

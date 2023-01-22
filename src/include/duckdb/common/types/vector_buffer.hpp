@@ -29,7 +29,8 @@ enum class VectorBufferType : uint8_t {
 	STRUCT_BUFFER,       // struct buffer, holds a ordered mapping from name to child vector
 	LIST_BUFFER,         // list buffer, holds a single flatvector child
 	MANAGED_BUFFER,      // managed buffer, holds a buffer managed by the buffermanager
-	OPAQUE_BUFFER        // opaque buffer, can be created for example by the parquet reader
+	OPAQUE_BUFFER,       // opaque buffer, can be created for example by the parquet reader
+	SUCCINCT_INT_BUFFER  // succinct int buffer, holds int vector
 };
 
 enum class VectorAuxiliaryDataType : uint8_t {
@@ -100,6 +101,10 @@ protected:
 	VectorBufferType buffer_type;
 	unique_ptr<VectorAuxiliaryData> aux_data;
 	unique_ptr<data_t[]> data;
+};
+
+class SuccinctBuffer : public VectorBuffer {
+
 };
 
 //! The DictionaryBuffer holds a selection vector

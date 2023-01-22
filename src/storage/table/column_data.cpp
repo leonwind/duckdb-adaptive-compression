@@ -15,6 +15,7 @@
 #include "duckdb/storage/table/struct_column_data.hpp"
 #include "duckdb/storage/table/update_segment.hpp"
 #include "duckdb/main/attached_database.hpp"
+#include <iostream>
 
 namespace duckdb {
 

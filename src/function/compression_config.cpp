@@ -17,6 +17,7 @@ struct DefaultCompressionMethod {
 static DefaultCompressionMethod internal_compression_methods[] = {
     {CompressionType::COMPRESSION_CONSTANT, ConstantFun::GetFunction, ConstantFun::TypeIsSupported},
     {CompressionType::COMPRESSION_UNCOMPRESSED, UncompressedFun::GetFunction, UncompressedFun::TypeIsSupported},
+    {CompressionType::COMPRESSION_SUCCINCT, SuccinctFun::GetFunction, SuccinctFun::TypeIsSupported},
     {CompressionType::COMPRESSION_RLE, RLEFun::GetFunction, RLEFun::TypeIsSupported},
     {CompressionType::COMPRESSION_BITPACKING, BitpackingFun::GetFunction, BitpackingFun::TypeIsSupported},
     {CompressionType::COMPRESSION_DICTIONARY, DictionaryCompressionFun::GetFunction,
@@ -70,6 +71,7 @@ static void TryLoadCompression(DBConfig &config, vector<CompressionFunction *> &
 
 vector<CompressionFunction *> DBConfig::GetCompressionFunctions(PhysicalType data_type) {
 	vector<CompressionFunction *> result;
+	TryLoadCompression(*this, result, CompressionType::COMPRESSION_SUCCINCT, data_type);
 	TryLoadCompression(*this, result, CompressionType::COMPRESSION_UNCOMPRESSED, data_type);
 	TryLoadCompression(*this, result, CompressionType::COMPRESSION_RLE, data_type);
 	TryLoadCompression(*this, result, CompressionType::COMPRESSION_BITPACKING, data_type);

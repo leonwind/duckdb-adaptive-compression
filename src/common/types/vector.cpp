@@ -215,6 +215,9 @@ void Vector::Initialize(bool zero_data, idx_t capacity) {
 	validity.Reset();
 	auto &type = GetType();
 	auto internal_type = type.InternalType();
+	if (TypeIsInteger(internal_type)) {
+
+	}
 	if (internal_type == PhysicalType::STRUCT) {
 		auto struct_buffer = make_unique<VectorStructBuffer>(type, capacity);
 		auxiliary = move(struct_buffer);
@@ -614,6 +617,8 @@ string VectorTypeToString(VectorType type) {
 		return "DICTIONARY";
 	case VectorType::CONSTANT_VECTOR:
 		return "CONSTANT";
+	case VectorType::SUCCINCT_INT_VECTOR:
+	    return "SUCCINCT_INT_VECTOR";
 	default:
 		return "UNKNOWN";
 	}
@@ -968,6 +973,11 @@ void Vector::Deserialize(idx_t count, Deserializer &source) {
 	if (has_validity) {
 		validity.Initialize(count);
 		source.ReadData((data_ptr_t)validity.GetData(), validity.ValidityMaskSize(count));
+	}
+
+	if (TypeIsInteger(type.InternalType())) {
+		// use succinct int vector
+		std::cout << "Type is integer" << std::endl;
 	}
 
 	if (TypeIsConstantSize(type.InternalType())) {

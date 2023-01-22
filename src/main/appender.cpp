@@ -122,7 +122,6 @@ void BaseAppender::AppendValueInternal(T input) {
 	auto &col = chunk.data[column];
 	switch (col.GetType().id()) {
 	case LogicalTypeId::BOOLEAN:
-		AppendValueInternal<T, bool>(col, input);
 		break;
 	case LogicalTypeId::UTINYINT:
 		AppendValueInternal<T, uint8_t>(col, input);

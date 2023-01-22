@@ -17,6 +17,7 @@
 #include "duckdb/common/enums/scan_options.hpp"
 #include "duckdb/common/mutex.hpp"
 #include "duckdb/parser/column_list.hpp"
+#include "sdsl/vectors.hpp"
 
 namespace duckdb {
 class AttachedDatabase;
@@ -67,6 +68,8 @@ private:
 	shared_ptr<VersionNode> version_info;
 	//! The column data of the row_group
 	vector<shared_ptr<ColumnData>> columns;
+	//! The succinct int vectors of the row_group
+	vector<shared_ptr<sdsl::int_vector<>>> succinct_vectors;
 	//! The segment statistics for each of the columns
 	vector<shared_ptr<SegmentStatistics>> stats;
 

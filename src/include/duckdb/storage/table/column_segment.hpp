@@ -17,6 +17,7 @@
 #include "duckdb/storage/storage_lock.hpp"
 #include "duckdb/storage/table/scan_state.hpp"
 #include "duckdb/function/compression_function.hpp"
+#include <sdsl/vectors.hpp>
 
 namespace duckdb {
 class ColumnSegment;
@@ -53,6 +54,8 @@ public:
 	SegmentStatistics stats;
 	//! The block that this segment relates to
 	shared_ptr<BlockHandle> block;
+
+	sdsl::int_vector<> succinct_vec;
 
 	static unique_ptr<ColumnSegment> CreatePersistentSegment(DatabaseInstance &db, BlockManager &block_manager,
 	                                                         block_id_t id, idx_t offset, const LogicalType &type_p,
@@ -126,6 +129,11 @@ public:
 	ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block, LogicalType type, ColumnSegmentType segment_type,
 	              idx_t start, idx_t count, CompressionFunction *function, unique_ptr<BaseStatistics> statistics,
 	              block_id_t block_id, idx_t offset, idx_t segment_size);
+	/*
+	ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block, LogicalType type, ColumnSegmentType segment_type,
+	              idx_t start, idx_t count, CompressionFunction *function, unique_ptr<BaseStatistics> statistics,
+	              block_id_t block_id, idx_t offset, idx_t segment_size, sdsl::int_vector<64>* succinct_vec);
+	*/
 	ColumnSegment(ColumnSegment &other, idx_t start);
 
 private:

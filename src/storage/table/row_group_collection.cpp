@@ -6,6 +6,7 @@
 #include "duckdb/transaction/transaction.hpp"
 #include "duckdb/planner/constraints/bound_not_null_constraint.hpp"
 #include "duckdb/storage/checkpoint/table_data_writer.hpp"
+#include <iostream>
 
 namespace duckdb {
 
@@ -265,6 +266,7 @@ void RowGroupCollection::InitializeAppend(TableAppendState &state) {
 bool RowGroupCollection::Append(DataChunk &chunk, TableAppendState &state) {
 	D_ASSERT(chunk.ColumnCount() == types.size());
 	chunk.Verify();
+	std::cout << "Append Data Chunk" << std::endl;
 
 	bool new_row_group = false;
 	idx_t append_count = chunk.size();
@@ -570,6 +572,7 @@ vector<vector<Value>> RowGroupCollection::GetStorageInfo() {
 //===--------------------------------------------------------------------===//
 shared_ptr<RowGroupCollection> RowGroupCollection::AddColumn(ClientContext &context, ColumnDefinition &new_column,
                                                              Expression *default_value) {
+	std::cout << "Add new Column Collection" << std::endl;
 	idx_t new_column_idx = types.size();
 	auto new_types = types;
 	new_types.push_back(new_column.GetType());

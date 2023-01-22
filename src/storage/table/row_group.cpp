@@ -14,6 +14,7 @@
 #include "duckdb/transaction/transaction_manager.hpp"
 #include "duckdb/main/database.hpp"
 #include "duckdb/main/attached_database.hpp"
+#include <iostream>
 
 namespace duckdb {
 
@@ -190,6 +191,7 @@ unique_ptr<RowGroup> RowGroup::AlterType(const LogicalType &target_type, idx_t c
 unique_ptr<RowGroup> RowGroup::AddColumn(ColumnDefinition &new_column, ExpressionExecutor &executor,
                                          Expression *default_value, Vector &result) {
 	Verify();
+	std::cout << "Create new column" << std::endl;
 
 	// construct a new column data for the new column
 	auto added_column =
@@ -624,6 +626,7 @@ void RowGroup::InitializeAppend(RowGroupAppendState &append_state) {
 
 void RowGroup::Append(RowGroupAppendState &state, DataChunk &chunk, idx_t append_count) {
 	// append to the current row_group
+	std::cout << "Append to row" << std::endl;
 	for (idx_t i = 0; i < columns.size(); i++) {
 		columns[i]->Append(*stats[i]->statistics, state.states[i], chunk.data[i], append_count);
 	}

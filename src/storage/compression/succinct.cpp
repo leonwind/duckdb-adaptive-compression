@@ -135,23 +135,16 @@ void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t s
 	//std::cout << "Result offset: " << result_offset << std::endl;
 
 	data_ptr_t target_ptr = FlatVector::GetData(result) + result_offset * sizeof(T);
-	idx_t j = 0;
 	for (idx_t i = 0; i < scan_count; ++i) {
 		std::cout << "target ptr idx: " << i * sizeof(T) << ", source idx: " << start + i << std::endl;
-		target_ptr[i * sizeof(T)] = source[start + i];
-		/*
-		uint32_t num = source[start + i];
-		uint8_t first = num & 0xF000;
-		uint8_t second = num & 0x0F00;
-		uint8_t third = num & 0x00F0;
-		uint8_t fourth = num & 0x000F;
-
-		target_ptr[j] = first;
-		target_ptr[(j + 1)] = second;
-		target_ptr[(j + 2)] = third;
-		target_ptr[(j + 3)] = fourth;
-		j += 4;
-		 */
+		auto entry_at_i = source[start + i];
+		// target_ptr is always an uint8_t ptr.
+		// The succinct vector however can be up to 64 bit.
+		// Since we can only load 8 bit at once into the target,
+		// we need to do it succinct.width() / 8 times.
+		for (idx_t j = 0; j < source.width() / 8; ++j) {
+			target_ptr[i * sizeof(T) + j] = entry_at_i >> j * 8;
+		}
 	}
 
 	//std::cout << "result_offset: " << result_offset << ", count: " << scan_count << ", start: " << start << std::endl;

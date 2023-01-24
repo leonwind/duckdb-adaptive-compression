@@ -13,6 +13,7 @@
 
 #include <cstring>
 #include <utility>
+#include <algorithm>
 
 namespace duckdb {
 
@@ -84,8 +85,8 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
 		//std::cout << "Function type is succinct" << std::endl;
 
 		//sdsl::int_vector<> tmp_v(segment_size / type_size);
-		succinct_vec.resize(segment_size / type_size);
 		succinct_vec.width(type_size * 8);
+		succinct_vec.resize(segment_size / type_size);
 		//std::cout << "Succinct vec size: " << succinct_vec.size() << ", width: " << (unsigned) succinct_vec.width() << std::endl;
 		//sdsl::util::expand_width(succinct_vec, type_size * 8);
 		//std::cout << "Vec element width " << (size_t) succinct_vec.width() << std::endl;
@@ -94,6 +95,9 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
 	} else {
 		//std::cout << "Function type is NOT succinct" << std::endl;
 	}
+
+	min_factor = UINT64_MAX;
+	compacted = false;
 
 	if (function->init_segment) {
 		segment_state = function->init_segment(*this, block_id);
@@ -137,6 +141,7 @@ void ColumnSegment::Skip(ColumnScanState &state) {
 
 void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &result) {
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
+		Compact();
 		//std::cout << "Before scan size: " << succinct_vec.size() << std::endl;
 	} else {
 		//std::cout << "Scan non succinct" << std::endl;
@@ -146,6 +151,7 @@ void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &resul
 
 void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset) {
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
+		Compact();
 		//std::cout << "Before partial scan size: " << succinct_vec.size() << std::endl;
 	} else {
 		//std::cout << "Partial Scan non succinct" << std::endl;
@@ -200,11 +206,40 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 	idx_t copy_count = function->append(*state.append_state, *this, stats, append_data, offset, count);
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		if (count == segment_size / type_size) {
-			//std::cout << "Compress vector" << std::endl;
-			sdsl::util::bit_compress(succinct_vec);
+			Compact();
 		}
 	}
 	return copy_count;
+}
+
+void ColumnSegment::Compact() {
+	if (compacted || function->type != CompressionType::COMPRESSION_SUCCINCT) {
+		return;
+	}
+
+	std::cout << "Length: " << succinct_vec.size()
+			  << ", width: " << (unsigned) succinct_vec.width()
+			  << ", count: " << count
+			  << ", segment_size: " << segment_size
+			  << std::endl;
+	std::cout << "Size before: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
+	ExtractCommonMinFactor();
+	std::cout << "Common min factor " << min_factor << std::endl;
+	sdsl::util::bit_compress(succinct_vec);
+	std::cout << "Size after: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
+	compacted = true;
+}
+
+
+void ColumnSegment::ExtractCommonMinFactor() {
+	for (idx_t i = 0; i < count; ++i) {
+		uint64_t curr = succinct_vec[i];
+		min_factor = std::min(min_factor, curr);
+	}
+
+	for (idx_t i = 0; i < count; ++i) {
+		succinct_vec[i] -= min_factor;
+	}
 }
 
 idx_t ColumnSegment::FinalizeAppend(ColumnAppendState &state) {

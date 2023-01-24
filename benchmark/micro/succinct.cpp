@@ -11,9 +11,9 @@ void Load(DuckDBBenchmarkState *state) override {
 	state->conn.Query("CREATE TABLE t1(i INTEGER);");
 	Appender appender(state->conn, "t1");
 	// insert the elements into the database
-	for (size_t i = 0; i < 200; i++) {
+	for (size_t i = 0; i < 2048; i++) {
 		appender.BeginRow();
-		appender.Append<int32_t>(-i);
+		appender.Append<int32_t>(200000);
 		appender.EndRow();
 	}
 }
@@ -25,8 +25,8 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 }
 
 string VerifyResult(QueryResult *result) override {
-	return result->ToString();
-    //return string();
+	//return result->ToString();
+    return string();
 }
 
 string BenchmarkInfo() override {

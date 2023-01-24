@@ -125,6 +125,10 @@ public:
 		return segment_state.get();
 	}
 
+	uint64_t GetCommonMinFactor() {
+		return min_factor;
+	}
+
 public:
 	ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block, LogicalType type, ColumnSegmentType segment_type,
 	              idx_t start, idx_t count, CompressionFunction *function, unique_ptr<BaseStatistics> statistics,
@@ -136,6 +140,9 @@ private:
 	void Scan(ColumnScanState &state, idx_t scan_count, Vector &result);
 	void ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset);
 
+	void ExtractCommonMinFactor();
+	void Compact();
+
 private:
 	//! The block id that this segment relates to (persistent segment only)
 	block_id_t block_id;
@@ -145,6 +152,10 @@ private:
 	idx_t segment_size;
 	//! Storage associated with the compressed segment
 	unique_ptr<CompressedSegmentState> segment_state;
+	//! Common min factor of all elements in this segment
+	uint64_t min_factor;
+	//!
+	bool compacted;
 };
 
 } // namespace duckdb

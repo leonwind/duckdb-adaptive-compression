@@ -124,9 +124,9 @@ void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t s
 	//std::cout << "Scan" << std::endl;
 	auto start = segment.GetRelativeIndex(state.row_index);
 	//sdsl::vlc_vector<> source(segment.succinct_vec);
-	//std::cout << "Used memory: " << sdsl::size_in_mega_bytes(source) << "[mb]" << std::endl;
 	//sdsl::util::bit_compress(segment.succinct_vec);
 	auto source = segment.succinct_vec;
+	//std::cout << "Used memory: " << sdsl::size_in_mega_bytes(source) << "[mb]" << std::endl;
 
 	//std::cout << "Succinct scan: " << scan_count << ", " << result_offset << ", " << start << std::endl;
 	//std::cout << "Scan size: " << source.size() << std::endl;
@@ -136,8 +136,8 @@ void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t s
 
 	data_ptr_t target_ptr = FlatVector::GetData(result) + result_offset * sizeof(T);
 	for (idx_t i = 0; i < scan_count; ++i) {
-		std::cout << "target ptr idx: " << i * sizeof(T) << ", source idx: " << start + i << std::endl;
-		auto entry_at_i = source[start + i];
+		//std::cout << "target ptr idx: " << i * sizeof(T) << ", source idx: " << start + i << std::endl;
+		auto entry_at_i = source[start + i] + segment.GetCommonMinFactor();
 		// target_ptr is always an uint8_t ptr.
 		// The succinct vector however can be up to 64 bit.
 		// Since we can only load 8 bit at once into the target,

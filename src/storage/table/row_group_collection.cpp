@@ -266,7 +266,7 @@ void RowGroupCollection::InitializeAppend(TableAppendState &state) {
 bool RowGroupCollection::Append(DataChunk &chunk, TableAppendState &state) {
 	D_ASSERT(chunk.ColumnCount() == types.size());
 	chunk.Verify();
-	std::cout << "Append Data Chunk" << std::endl;
+	//std::cout << "Append Data Chunk" << std::endl;
 
 	bool new_row_group = false;
 	idx_t append_count = chunk.size();

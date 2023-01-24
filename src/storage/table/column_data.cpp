@@ -349,6 +349,7 @@ void ColumnData::AppendTransientSegment(SegmentLock &l, idx_t start_row) {
 		segment_size = STANDARD_VECTOR_SIZE * GetTypeIdSize(type.InternalType());
 #endif
 	}
+	//std::cout << "Internal type id size: " << GetTypeIdSize(type.InternalType()) << std::endl;
 	auto new_segment = ColumnSegment::CreateTransientSegment(GetDatabase(), type, start_row, segment_size);
 	data.AppendSegment(l, move(new_segment));
 }

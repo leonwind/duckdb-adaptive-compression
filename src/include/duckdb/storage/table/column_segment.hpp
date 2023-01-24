@@ -129,11 +129,7 @@ public:
 	ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block, LogicalType type, ColumnSegmentType segment_type,
 	              idx_t start, idx_t count, CompressionFunction *function, unique_ptr<BaseStatistics> statistics,
 	              block_id_t block_id, idx_t offset, idx_t segment_size);
-	/*
-	ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block, LogicalType type, ColumnSegmentType segment_type,
-	              idx_t start, idx_t count, CompressionFunction *function, unique_ptr<BaseStatistics> statistics,
-	              block_id_t block_id, idx_t offset, idx_t segment_size, sdsl::int_vector<64>* succinct_vec);
-	*/
+
 	ColumnSegment(ColumnSegment &other, idx_t start);
 
 private:

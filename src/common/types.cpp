@@ -318,12 +318,23 @@ bool TypeIsNumeric(PhysicalType type) {
 bool TypeIsInteger(PhysicalType type) {
 	return (type >= PhysicalType::UINT8 && type <= PhysicalType::INT64) || type == PhysicalType::INT128;
 }
-bool TypeIsUInteger(PhysicalType type) {
+bool TypeIsUnsignedInteger(PhysicalType type) {
 	switch(type) {
 	case PhysicalType::UINT8:
 	case PhysicalType::UINT16:
 	case PhysicalType::UINT32:
 	case PhysicalType::UINT64:
+		return true;
+	default:
+		return false;
+	}
+}
+bool TypeIsSignedInteger(PhysicalType type) {
+	switch(type) {
+	case PhysicalType::INT8:
+	case PhysicalType::INT16:
+	case PhysicalType::INT32:
+	case PhysicalType::INT64:
 		return true;
 	default:
 		return false;

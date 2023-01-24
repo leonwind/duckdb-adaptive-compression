@@ -43,25 +43,123 @@ idx_t SuccinctFinalAnalyze(AnalyzeState &state_p) {
 //===--------------------------------------------------------------------===//
 // Compress
 //===--------------------------------------------------------------------===//
+struct SuccinctCompressState : public CompressionState {
+	explicit SuccinctCompressState(ColumnDataCheckpointer &checkpointer);
 
+	ColumnDataCheckpointer &checkpointer;
+	unique_ptr<ColumnSegment> current_segment;
+	ColumnAppendState append_state;
+
+	virtual void CreateEmptySegment(idx_t row_start);
+	void FlushSegment(idx_t segment_size);
+	void Finalize(idx_t segment_size);
+};
+
+SuccinctCompressState::SuccinctCompressState(ColumnDataCheckpointer &checkpointer)
+    : checkpointer(checkpointer) {
+	CreateEmptySegment(checkpointer.GetRowGroup().start);
+}
+
+void SuccinctCompressState::CreateEmptySegment(idx_t row_start) {
+	auto &db = checkpointer.GetDatabase();
+	auto &type = checkpointer.GetType();
+	auto compressed_segment = ColumnSegment::CreateTransientSegment(db, type, row_start);
+	if (type.InternalType() == PhysicalType::VARCHAR) {
+		auto &state = (UncompressedStringSegmentState &)*compressed_segment->GetSegmentState();
+		state.overflow_writer = make_unique<WriteOverflowStringsToDisk>(checkpointer.GetColumnData().block_manager);
+	}
+	current_segment = move(compressed_segment);
+	current_segment->InitializeAppend(append_state);
+}
+
+void SuccinctCompressState::FlushSegment(idx_t segment_size) {
+	auto &state = checkpointer.GetCheckpointState();
+	state.FlushSegment(move(current_segment), segment_size);
+}
+
+void SuccinctCompressState::Finalize(idx_t segment_size) {
+	FlushSegment(segment_size);
+	current_segment.reset();
+}
+
+unique_ptr<CompressionState> InitCompression(ColumnDataCheckpointer &checkpointer,
+                                                                    unique_ptr<AnalyzeState> state) {
+	return make_unique<SuccinctCompressState>(checkpointer);
+}
+
+void Compress(CompressionState &state_p, Vector &data, idx_t count) {
+	//std::cout << "Compress" << std::endl;
+	auto &state = (SuccinctCompressState &)state_p;
+	UnifiedVectorFormat vdata;
+	data.ToUnifiedFormat(count, vdata);
+
+	idx_t offset = 0;
+	while (count > 0) {
+		idx_t appended = state.current_segment->Append(state.append_state, vdata, offset, count);
+		if (appended == count) {
+			// appended everything: finished
+			return;
+		}
+		auto next_start = state.current_segment->start + state.current_segment->count;
+		// the segment is full: flush it to disk
+		state.FlushSegment(state.current_segment->FinalizeAppend(state.append_state));
+
+		// now create a new segment and continue appending
+		state.CreateEmptySegment(next_start);
+		offset += appended;
+		count -= appended;
+	}
+}
+
+void FinalizeCompress(CompressionState &state_p) {
+	auto &state = (SuccinctCompressState &)state_p;
+	state.Finalize(state.current_segment->FinalizeAppend(state.append_state));
+}
 //===--------------------------------------------------------------------===//
 // Scan
 //===--------------------------------------------------------------------===//
 template <class T>
 void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t scan_count, Vector &result,
                          idx_t result_offset) {
+	//std::cout << "Scan" << std::endl;
 	auto start = segment.GetRelativeIndex(state.row_index);
+	//sdsl::vlc_vector<> source(segment.succinct_vec);
+	//std::cout << "Used memory: " << sdsl::size_in_mega_bytes(source) << "[mb]" << std::endl;
+	//sdsl::util::bit_compress(segment.succinct_vec);
 	auto source = segment.succinct_vec;
 
-	std::cout << "Succinct scan: " << scan_count << ", " << result_offset << ", " << start << std::endl;
-	std::cout << "Scan size: " << source.size() << std::endl;
+	//std::cout << "Succinct scan: " << scan_count << ", " << result_offset << ", " << start << std::endl;
+	//std::cout << "Scan size: " << source.size() << std::endl;
 
 	result.SetVectorType(VectorType::FLAT_VECTOR);
+	//std::cout << "Result offset: " << result_offset << std::endl;
+
 	data_ptr_t target_ptr = FlatVector::GetData(result) + result_offset * sizeof(T);
+	idx_t j = 0;
 	for (idx_t i = 0; i < scan_count; ++i) {
+		std::cout << "target ptr idx: " << i * sizeof(T) << ", source idx: " << start + i << std::endl;
 		target_ptr[i * sizeof(T)] = source[start + i];
+		/*
+		uint32_t num = source[start + i];
+		uint8_t first = num & 0xF000;
+		uint8_t second = num & 0x0F00;
+		uint8_t third = num & 0x00F0;
+		uint8_t fourth = num & 0x000F;
+
+		target_ptr[j] = first;
+		target_ptr[(j + 1)] = second;
+		target_ptr[(j + 2)] = third;
+		target_ptr[(j + 3)] = fourth;
+		j += 4;
+		 */
 	}
-	std::cout << "Scanned element " << target_ptr[0] << " from " << source[0] << std::endl;
+
+	//std::cout << "result_offset: " << result_offset << ", count: " << scan_count << ", start: " << start << std::endl;
+
+	//memcpy(FlatVector::GetData(result) + result_offset * sizeof(T), source.data() + start, scan_count * sizeof(T));
+
+	//std::cout << "Scanned element " << target_ptr[0] << " from " << source[0] << std::endl;
+	//std::cout << "Finished scan" << std::endl;
 }
 
 template <class T>
@@ -74,18 +172,22 @@ void SuccinctScan(ColumnSegment &segment, ColumnScanState &state, idx_t scan_cou
 template <class T>
 void SuccinctFetchRow(ColumnSegment &segment, ColumnFetchState &state, row_t row_id, Vector &result,
                       idx_t result_idx) {
-	std::cout << "Succinct fetch row" << std::endl;
+	//std::cout << "Succinct fetch row" << std::endl;
 	auto source = segment.succinct_vec;
 
 	data_ptr_t target_ptr = FlatVector::GetData(result) + result_idx * sizeof(T);
+	/*
 	for (idx_t i = 0; i < source.size(); ++i) {
 		target_ptr[i * sizeof(T)] = source[i];
 	}
+	 */
+	memcpy(FlatVector::GetData(result) + result_idx * sizeof(T), source.data(), sizeof(T));
 }
 //===--------------------------------------------------------------------===//
 // Append
 //===--------------------------------------------------------------------===//
 static unique_ptr<CompressionAppendState> SuccinctInitAppend(ColumnSegment &segment) {
+	//std::cout << "Init append" << std::endl;
 	auto &buffer_manager = BufferManager::GetBufferManager(segment.db);
 	auto handle = buffer_manager.Pin(segment.block);
 	return make_unique<CompressionAppendState>(move(handle));
@@ -93,11 +195,13 @@ static unique_ptr<CompressionAppendState> SuccinctInitAppend(ColumnSegment &segm
 
 template <class T>
 void SuccinctAppendLoop(SegmentStatistics &stats, sdsl::int_vector<> &target, idx_t target_offset, UnifiedVectorFormat &adata,
-                       idx_t offset, idx_t count) {
+                       idx_t offset, idx_t count, PhysicalType type) {
 
 	auto sdata = (T *)adata.data;
-	//uint64_t* target_ptr = target->data();
+	//std::cout << "target offset " << target_offset << ", count " << count << std::endl;
 	//std::cout << "Succinct size " << target.size() << std::endl;
+	//std::cout << "Append loop" << std::endl;
+
 	if (!adata.validity.AllValid()) {
 		for (idx_t i = 0; i < count; i++) {
 			auto source_idx = adata.sel->get_index(offset + i);
@@ -106,10 +210,10 @@ void SuccinctAppendLoop(SegmentStatistics &stats, sdsl::int_vector<> &target, id
 			if (!is_null) {
 				NumericStatistics::Update<T>(stats, sdata[source_idx]);
 				//std::cout << "Target idx: " << target_idx << std::endl;
-				std::cout << "Source: " << sdata[source_idx] << std::endl;
+				//std::cout << "Source: " << sdata[source_idx] << std::endl;
+				//std::cout << "Insert " << sdata[source_idx] << std::endl;
+
 				target[target_idx] = sdata[source_idx];
-				std::cout << "Stored " << target[target_idx] << " at " << target_idx << std::endl;
-				//std::cout << "Post seg fault" << std::endl;
 			} else {
 				// we insert a NullValue<T> in the null gap for debuggability
 				// this value should never be used or read anywhere
@@ -121,10 +225,15 @@ void SuccinctAppendLoop(SegmentStatistics &stats, sdsl::int_vector<> &target, id
 			auto source_idx = adata.sel->get_index(offset + i);
 			auto target_idx = target_offset + i;
 			NumericStatistics::Update<T>(stats, sdata[source_idx]);
-			std::cout << "Source: " << sdata[source_idx] << std::endl;
+			//std::cout << "Source: " << sdata[source_idx] << std::endl;
 			target[target_idx] = sdata[source_idx];
 		}
 	}
+	//std::cout << "Before: Size [MB]" << sdsl::size_in_mega_bytes(target) << std::endl;
+	//sdsl::util::bit_compress(target);
+	//std::cout << "After: Size [MB]" << sdsl::size_in_mega_bytes(target) << std::endl;
+	//std::cout << "Inserted " << count << ", vec has size of " << target.size() << std::endl;
+	//std::cout << "Finished succinct append loop" << std::endl;
 }
 
 template <class T>
@@ -136,15 +245,16 @@ idx_t SuccinctAppend(CompressionAppendState &append_state, ColumnSegment &segmen
 	idx_t max_tuple_count = segment.SegmentSize() / sizeof(T);
 	idx_t copy_count = MinValue<idx_t>(count, max_tuple_count - segment.count);
 
-	SuccinctAppendLoop<T>(stats, segment.succinct_vec, segment.count, data, offset, copy_count);
+	SuccinctAppendLoop<T>(stats, segment.succinct_vec, segment.count, data, offset, copy_count, segment.type.InternalType());
 	segment.count += copy_count;
 	return copy_count;
 }
 
 template <class T>
 idx_t SuccinctFinalizeAppend(ColumnSegment &segment, SegmentStatistics &stats) {
+	//std::cout << "Compact succinct vector" << std::endl;
 	sdsl::util::bit_compress(segment.succinct_vec);
-	std::cout << "Finalize succinct append" << std::endl;
+	//std::cout << "Finalize succinct append" << std::endl;
 	return segment.count * sizeof(T);
 }
 
@@ -154,8 +264,8 @@ idx_t SuccinctFinalizeAppend(ColumnSegment &segment, SegmentStatistics &stats) {
 template <class T>
 CompressionFunction SuccinctGetFunction(PhysicalType type) {
 	return CompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type, FixedSizeInitAnalyze,
-	                           FixedSizeAnalyze, FixedSizeFinalAnalyze<T>, UncompressedFunctions::InitCompression,
-	                           UncompressedFunctions::Compress, UncompressedFunctions::FinalizeCompress,
+	                           FixedSizeAnalyze, FixedSizeFinalAnalyze<T>, InitCompression,
+	                           Compress, FinalizeCompress,
 	                           FixedSizeInitScan, SuccinctScan<T>, SuccinctScanPartial<T>, SuccinctFetchRow<T>,
 	                           UncompressedFunctions::EmptySkip, nullptr, SuccinctInitAppend, SuccinctAppend<T>,
 	                           SuccinctFinalizeAppend<T>, nullptr);
@@ -163,28 +273,29 @@ CompressionFunction SuccinctGetFunction(PhysicalType type) {
 
 CompressionFunction SuccinctFun::GetFunction(PhysicalType data_type) {
 	switch (data_type) {
+	case PhysicalType::INT8:
 	case PhysicalType::UINT8:
 		return SuccinctGetFunction<uint8_t>(data_type);
+	case PhysicalType::INT16:
 	case PhysicalType::UINT16:
 		return SuccinctGetFunction<uint16_t>(data_type);
+	case PhysicalType::INT32:
 	case PhysicalType::UINT32:
 		return SuccinctGetFunction<uint32_t>(data_type);
+	case PhysicalType::INT64:
 	case PhysicalType::UINT64:
 		return SuccinctGetFunction<uint64_t>(data_type);
 	default:
-		throw InternalException("Unsupported type for FixedSizeUncompressed::GetFunction");
+		throw InternalException("Unsupported type for FixedSizeSuccinct::GetFunction");
 	}
 }
 
 bool SuccinctFun::TypeIsSupported(PhysicalType type) {
 	switch (type) {
-		/*
 	case PhysicalType::INT8:
 	case PhysicalType::INT16:
 	case PhysicalType::INT32:
 	case PhysicalType::INT64:
-	case PhysicalType::INT128:
-		 */
 	case PhysicalType::UINT8:
 	case PhysicalType::UINT16:
 	case PhysicalType::UINT32:

@@ -106,6 +106,13 @@ void test9() {
 	test9_sub(&v);
 }
 
+void test10() {
+	int_vector<> v(100);
+	//v.width(32);
+	v[0] = 300;
+	std::cout << v[0] << std::endl;
+}
+
 int main(){
 	//test1();
 	//test2();
@@ -115,5 +122,6 @@ int main(){
 	//test6();
 	//test7();
 	//test8();
-	test9();
+	//test9();
+	test10();
 }

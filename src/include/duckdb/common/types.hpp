@@ -490,7 +490,8 @@ DUCKDB_API bool TypeIsConstantSize(PhysicalType type);
 DUCKDB_API bool TypeIsIntegral(PhysicalType type);
 DUCKDB_API bool TypeIsNumeric(PhysicalType type);
 DUCKDB_API bool TypeIsInteger(PhysicalType type);
-DUCKDB_API bool TypeIsUInteger(PhysicalType type);
+DUCKDB_API bool TypeIsUnsignedInteger(PhysicalType type);
+DUCKDB_API bool TypeIsSignedInteger(PhysicalType type);
 
 bool ApproxEqual(float l, float r);
 bool ApproxEqual(double l, double r);

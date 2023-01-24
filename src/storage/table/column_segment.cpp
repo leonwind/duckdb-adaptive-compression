@@ -21,7 +21,6 @@ unique_ptr<ColumnSegment> ColumnSegment::CreatePersistentSegment(DatabaseInstanc
                                                                  const LogicalType &type, idx_t start, idx_t count,
                                                                  CompressionType compression_type,
                                                                  unique_ptr<BaseStatistics> statistics) {
-	std::cout << "Create persistent segment" << std::endl;
 	auto &config = DBConfig::GetConfig(db);
 	CompressionFunction *function;
 	shared_ptr<BlockHandle> block;
@@ -39,24 +38,29 @@ unique_ptr<ColumnSegment> ColumnSegment::CreatePersistentSegment(DatabaseInstanc
 
 unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance &db, const LogicalType &type,
                                                                 idx_t start, idx_t segment_size) {
-	std::cout << "Create transient segment" << std::endl;
 	auto &config = DBConfig::GetConfig(db);
 
 	CompressionFunction* function;
-	if (TypeIsUInteger(type.InternalType())) {
-		function = config.GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
-	} else {
-		function = config.GetCompressionFunction(CompressionType::COMPRESSION_UNCOMPRESSED, type.InternalType());
-	}
-
 	auto &buffer_manager = BufferManager::GetBufferManager(db);
 	shared_ptr<BlockHandle> block;
-	// transient: allocate a buffer for the uncompressed segment
-	if (segment_size < Storage::BLOCK_SIZE) {
-		block = buffer_manager.RegisterSmallMemory(segment_size);
+	//std::cout << "Create transient segment with size " << segment_size << std::endl;
+
+	if (TypeIsInteger(type.InternalType())) {
+		//std::cout << "Create SUCCINCT transient segment" << std::endl;
+		function = config.GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
+		block = buffer_manager.RegisterSmallMemory(0);
 	} else {
-		buffer_manager.Allocate(segment_size, false, &block);
+		//std::cout << "Create UNCOMPRESSED transient segment" << std::endl;
+		function = config.GetCompressionFunction(CompressionType::COMPRESSION_UNCOMPRESSED, type.InternalType());
+		// transient: allocate a buffer for the uncompressed segment
+		if (segment_size < Storage::BLOCK_SIZE) {
+			block = buffer_manager.RegisterSmallMemory(segment_size);
+		} else {
+			buffer_manager.Allocate(segment_size, false, &block);
+		}
 	}
+	//std::cout << "Current used memory " << buffer_manager.GetUsedMemory() << std::endl;
+
 	return make_unique<ColumnSegment>(db, move(block), type, ColumnSegmentType::TRANSIENT, start, 0, function, nullptr,
 	                                  INVALID_BLOCK, 0, segment_size);
 }
@@ -74,16 +78,21 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
       block_id(block_id_p), offset(offset_p), segment_size(segment_size_p) {
 	D_ASSERT(function);
 
+	//std::cout << "Current data type: " << TypeIdToString(type.InternalType()) << std::endl;
+
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
-		std::cout << "Function type is succinct" << std::endl;
+		//std::cout << "Function type is succinct" << std::endl;
 
-		sdsl::int_vector<> tmp_v(segment_size);
-		succinct_vec = std::move(tmp_v);
-		sdsl::util::expand_width(succinct_vec, type_size);
+		//sdsl::int_vector<> tmp_v(segment_size / type_size);
+		succinct_vec.resize(segment_size / type_size);
+		succinct_vec.width(type_size * 8);
+		//std::cout << "Succinct vec size: " << succinct_vec.size() << ", width: " << (unsigned) succinct_vec.width() << std::endl;
+		//sdsl::util::expand_width(succinct_vec, type_size * 8);
+		//std::cout << "Vec element width " << (size_t) succinct_vec.width() << std::endl;
 
-		std::cout << "Constructor size: " << succinct_vec.size() << std::endl;
+		//std::cout << "Constructor size: " << succinct_vec.size() << std::endl;
 	} else {
-		std::cout << "Function type is NOT succinct" << std::endl;
+		//std::cout << "Function type is NOT succinct" << std::endl;
 	}
 
 	if (function->init_segment) {
@@ -128,18 +137,18 @@ void ColumnSegment::Skip(ColumnScanState &state) {
 
 void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &result) {
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
-		std::cout << "Before scan size: " << succinct_vec.size() << std::endl;
+		//std::cout << "Before scan size: " << succinct_vec.size() << std::endl;
 	} else {
-		std::cout << "Scan non succinct" << std::endl;
+		//std::cout << "Scan non succinct" << std::endl;
 	}
 	function->scan_vector(*this, state, scan_count, result);
 }
 
 void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset) {
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
-		std::cout << "Before partial scan size: " << succinct_vec.size() << std::endl;
+		//std::cout << "Before partial scan size: " << succinct_vec.size() << std::endl;
 	} else {
-		std::cout << "Partial Scan non succinct" << std::endl;
+		//std::cout << "Partial Scan non succinct" << std::endl;
 	}
 	function->scan_partial(*this, state, scan_count, result, result_offset);
 }
@@ -187,14 +196,15 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 	if (!function->append) {
 		throw InternalException("Attempting to append to a segment without append method");
 	}
+	//std::cout << "Insert " << count << " of " << segment_size / type_size << std::endl;
+	idx_t copy_count = function->append(*state.append_state, *this, stats, append_data, offset, count);
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
-		std::cout << "Append as succinct" << std::endl;
-		std::cout << "Append size: " << succinct_vec.size() << std::endl;
-	} else {
-		std::cout << "Append as not succinct" << std::endl;
+		if (count == segment_size / type_size) {
+			//std::cout << "Compress vector" << std::endl;
+			sdsl::util::bit_compress(succinct_vec);
+		}
 	}
-	return function->append(*state.append_state, *this, stats, append_data, offset, count);
-
+	return copy_count;
 }
 
 idx_t ColumnSegment::FinalizeAppend(ColumnAppendState &state) {
@@ -202,7 +212,7 @@ idx_t ColumnSegment::FinalizeAppend(ColumnAppendState &state) {
 	if (!function->finalize_append) {
 		throw InternalException("Attempting to call FinalizeAppend on a segment without a finalize_append method");
 	}
-	std::cout << "Finalize append" << std::endl;
+	//std::cout << "Finalize append" << std::endl;
 	auto result_count = function->finalize_append(*this, stats);
 	state.append_state.reset();
 	return result_count;
@@ -221,6 +231,11 @@ void ColumnSegment::RevertAppend(idx_t start_row) {
 //===--------------------------------------------------------------------===//
 void ColumnSegment::ConvertToPersistent(BlockManager *block_manager, block_id_t block_id_p) {
 	D_ASSERT(segment_type == ColumnSegmentType::TRANSIENT);
+	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
+		return;
+	}
+	std::cout << "Convert to persistent" << std::endl;
+	std::cout << "Compress type: " << CompressionTypeToString(function->type) << std::endl;
 	segment_type = ColumnSegmentType::PERSISTENT;
 
 	block_id = block_id_p;
@@ -247,6 +262,7 @@ void ColumnSegment::ConvertToPersistent(BlockManager *block_manager, block_id_t 
 
 void ColumnSegment::MarkAsPersistent(shared_ptr<BlockHandle> block_p, uint32_t offset_p) {
 	D_ASSERT(segment_type == ColumnSegmentType::TRANSIENT);
+	std::cout << "Mark as persistent" << std::endl;
 	segment_type = ColumnSegmentType::PERSISTENT;
 
 	block_id = block_p->BlockId();

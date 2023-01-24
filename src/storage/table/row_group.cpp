@@ -626,7 +626,7 @@ void RowGroup::InitializeAppend(RowGroupAppendState &append_state) {
 
 void RowGroup::Append(RowGroupAppendState &state, DataChunk &chunk, idx_t append_count) {
 	// append to the current row_group
-	std::cout << "Append to row" << std::endl;
+	//std::cout << "Append to row" << std::endl;
 	for (idx_t i = 0; i < columns.size(); i++) {
 		columns[i]->Append(*stats[i]->statistics, state.states[i], chunk.data[i], append_count);
 	}

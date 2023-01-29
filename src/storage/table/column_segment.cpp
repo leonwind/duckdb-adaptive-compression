@@ -39,6 +39,7 @@ unique_ptr<ColumnSegment> ColumnSegment::CreatePersistentSegment(DatabaseInstanc
 
 unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance &db, const LogicalType &type,
                                                                 idx_t start, idx_t segment_size) {
+
 	auto &config = DBConfig::GetConfig(db);
 
 	CompressionFunction* function;
@@ -46,7 +47,7 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 	shared_ptr<BlockHandle> block;
 	//std::cout << "Create transient segment with size " << segment_size << std::endl;
 
-	if (TypeIsInteger(type.InternalType())) {
+	if (TypeIsInteger(type.InternalType()) && buffer_manager.IsSuccinctEnabled()) {
 		//std::cout << "Create SUCCINCT transient segment" << std::endl;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
 		block = buffer_manager.RegisterSmallMemory(0);
@@ -217,17 +218,22 @@ void ColumnSegment::Compact() {
 		return;
 	}
 
+	/*
 	std::cout << "Length: " << succinct_vec.size()
 			  << ", width: " << (unsigned) succinct_vec.width()
 			  << ", count: " << count
 			  << ", segment_size: " << segment_size
 			  << std::endl;
 	std::cout << "Size before: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
-	ExtractCommonMinFactor();
 	std::cout << "Common min factor " << min_factor << std::endl;
-	sdsl::util::bit_compress(succinct_vec);
 	std::cout << "Size after: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
+	 */
+
+	ExtractCommonMinFactor();
+	sdsl::util::bit_compress(succinct_vec);
 	compacted = true;
+
+	BufferManager::GetBufferManager(db).AddToDataSize(sdsl::size_in_bytes(succinct_vec));
 }
 
 

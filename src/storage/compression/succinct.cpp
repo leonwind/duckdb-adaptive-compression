@@ -121,22 +121,14 @@ void FinalizeCompress(CompressionState &state_p) {
 template <class T>
 void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t scan_count, Vector &result,
                          idx_t result_offset) {
-	//std::cout << "Scan" << std::endl;
 	auto start = segment.GetRelativeIndex(state.row_index);
-	//sdsl::vlc_vector<> source(segment.succinct_vec);
-	//sdsl::util::bit_compress(segment.succinct_vec);
 	auto source = segment.succinct_vec;
-	//std::cout << "Used memory: " << sdsl::size_in_mega_bytes(source) << "[mb]" << std::endl;
-
-	//std::cout << "Succinct scan: " << scan_count << ", " << result_offset << ", " << start << std::endl;
-	//std::cout << "Scan size: " << source.size() << std::endl;
-
 	result.SetVectorType(VectorType::FLAT_VECTOR);
-	//std::cout << "Result offset: " << result_offset << std::endl;
 
 	data_ptr_t target_ptr = FlatVector::GetData(result) + result_offset * sizeof(T);
 	for (idx_t i = 0; i < scan_count; ++i) {
 		//std::cout << "target ptr idx: " << i * sizeof(T) << ", source idx: " << start + i << std::endl;
+
 		auto entry_at_i = source[start + i] + segment.GetCommonMinFactor();
 		// target_ptr is always an uint8_t ptr.
 		// The succinct vector however can be up to 64 bit.
@@ -146,13 +138,6 @@ void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t s
 			target_ptr[i * sizeof(T) + j] = entry_at_i >> j * 8;
 		}
 	}
-
-	//std::cout << "result_offset: " << result_offset << ", count: " << scan_count << ", start: " << start << std::endl;
-
-	//memcpy(FlatVector::GetData(result) + result_offset * sizeof(T), source.data() + start, scan_count * sizeof(T));
-
-	//std::cout << "Scanned element " << target_ptr[0] << " from " << source[0] << std::endl;
-	//std::cout << "Finished scan" << std::endl;
 }
 
 template <class T>
@@ -165,16 +150,19 @@ void SuccinctScan(ColumnSegment &segment, ColumnScanState &state, idx_t scan_cou
 template <class T>
 void SuccinctFetchRow(ColumnSegment &segment, ColumnFetchState &state, row_t row_id, Vector &result,
                       idx_t result_idx) {
-	//std::cout << "Succinct fetch row" << std::endl;
 	auto source = segment.succinct_vec;
 
 	data_ptr_t target_ptr = FlatVector::GetData(result) + result_idx * sizeof(T);
-	/*
 	for (idx_t i = 0; i < source.size(); ++i) {
-		target_ptr[i * sizeof(T)] = source[i];
+		auto entry_at_i = source[i];
+		if (segment.GetCommonMinFactor() != UINT64_MAX) {
+			entry_at_i += segment.GetCommonMinFactor();
+		}
+
+		for (idx_t j = 0; j < source.width() / 8; ++j) {
+			target_ptr[i * sizeof(T) + j] = entry_at_i >> j * 8;
+		}
 	}
-	 */
-	memcpy(FlatVector::GetData(result) + result_idx * sizeof(T), source.data(), sizeof(T));
 }
 //===--------------------------------------------------------------------===//
 // Append

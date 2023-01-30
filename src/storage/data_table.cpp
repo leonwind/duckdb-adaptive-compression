@@ -218,6 +218,11 @@ void DataTable::InitializeParallelScan(ClientContext &context, ParallelTableScan
 }
 
 bool DataTable::NextParallelScan(ClientContext &context, ParallelTableScanState &state, TableScanState &scan_state) {
+	if (scan_state.GetFilters()) {
+		std::cout << "[DATA TABLE] Filters in data table" << std::endl;
+	} else {
+		std::cout << "[DATA TABLE] NO Filters in data table" << std::endl;
+	}
 	if (row_groups->NextParallelScan(context, state.scan_state, scan_state.table_state)) {
 		return true;
 	}

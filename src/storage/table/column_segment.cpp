@@ -48,11 +48,11 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 	//std::cout << "Create transient segment with size " << segment_size << std::endl;
 
 	if (TypeIsInteger(type.InternalType()) && buffer_manager.IsSuccinctEnabled()) {
-		//std::cout << "Create SUCCINCT transient segment" << std::endl;
+		std::cout << "Create SUCCINCT transient segment" << std::endl;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
 		block = buffer_manager.RegisterSmallMemory(0);
 	} else {
-		//std::cout << "Create UNCOMPRESSED transient segment" << std::endl;
+		std::cout << "Create UNCOMPRESSED transient segment" << std::endl;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_UNCOMPRESSED, type.InternalType());
 		// transient: allocate a buffer for the uncompressed segment
 		if (segment_size < Storage::BLOCK_SIZE) {
@@ -62,6 +62,8 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 		}
 		buffer_manager.AddOnlyToDataSize(segment_size);
 	}
+
+
 	//std::cout << "Current used memory " << buffer_manager.GetUsedMemory() << std::endl;
 
 	return make_unique<ColumnSegment>(db, move(block), type, ColumnSegmentType::TRANSIENT, start, 0, function, nullptr,
@@ -229,7 +231,7 @@ void ColumnSegment::Compact() {
 	std::cout << "Common min factor " << min_factor << std::endl;
 	std::cout << "Size after: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
 	 */
-
+	//std::cout << "Compact succinct vector" << std::endl;
 	ExtractCommonMinFactor();
 	sdsl::util::bit_compress(succinct_vec);
 	compacted = true;
@@ -323,6 +325,7 @@ void ColumnSegment::MarkAsPersistent(shared_ptr<BlockHandle> block_p, uint32_t o
 template <class T, class OP, bool HAS_NULL>
 static idx_t TemplatedFilterSelection(T *vec, T *predicate, SelectionVector &sel, idx_t approved_tuple_count,
                                       ValidityMask &mask, SelectionVector &result_sel) {
+	std::cout << "Templated Filter Selection" << std::endl;
 	idx_t result_count = 0;
 	for (idx_t i = 0; i < approved_tuple_count; i++) {
 		auto idx = sel.get_index(i);
@@ -336,6 +339,7 @@ static idx_t TemplatedFilterSelection(T *vec, T *predicate, SelectionVector &sel
 template <class T>
 static void FilterSelectionSwitch(T *vec, T *predicate, SelectionVector &sel, idx_t &approved_tuple_count,
                                   ExpressionType comparison_type, ValidityMask &mask) {
+	std::cout << "Filter selection switch" << std::endl;
 	SelectionVector new_sel(approved_tuple_count);
 	// the inplace loops take the result as the last parameter
 	switch (comparison_type) {
@@ -432,6 +436,7 @@ static idx_t TemplatedNullSelection(SelectionVector &sel, idx_t &approved_tuple_
 
 idx_t ColumnSegment::FilterSelection(SelectionVector &sel, Vector &result, const TableFilter &filter,
                                      idx_t &approved_tuple_count, ValidityMask &mask) {
+	std::cout << "Filter selection non static" << std::endl;
 	switch (filter.filter_type) {
 	case TableFilterType::CONJUNCTION_OR: {
 		// similar to the CONJUNCTION_AND, but we need to take care of the SelectionVectors (OR all of them)

@@ -105,6 +105,13 @@ void RowGroupCollection::InitializeScanWithOffset(CollectionScanState &state, co
 
 bool RowGroupCollection::InitializeScanInRowGroup(CollectionScanState &state, RowGroup *row_group, idx_t vector_index,
                                                   idx_t max_row) {
+
+	std::cout << "Init scan in Row Group collection" << std::endl;
+	if (state.GetFilters()) {
+		std::cout << "Filters in row group" << std::endl;
+	} else {
+		std::cout << "NO Filters in row group" << std::endl;
+	}
 	state.max_row = max_row;
 	return row_group->InitializeScanWithOffset(state.row_group_state, vector_index);
 }
@@ -118,6 +125,12 @@ void RowGroupCollection::InitializeParallelScan(ParallelCollectionScanState &sta
 
 bool RowGroupCollection::NextParallelScan(ClientContext &context, ParallelCollectionScanState &state,
                                           CollectionScanState &scan_state) {
+	std::cout << "Next parallel scan" << std::endl;
+	if (scan_state.GetFilters()) {
+		std::cout << "Filters in parallel scan" << std::endl;
+	} else {
+		std::cout << "NO Filters in parallel scan" << std::endl;
+	}
 	while (state.current_row_group && state.current_row_group->count > 0) {
 		idx_t vector_index;
 		idx_t max_row;

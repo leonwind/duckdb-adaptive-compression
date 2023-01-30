@@ -90,6 +90,7 @@ void ColumnData::InitializeScanWithOffset(ColumnScanState &state, idx_t row_idx)
 }
 
 idx_t ColumnData::ScanVector(ColumnScanState &state, Vector &result, idx_t remaining) {
+	std::cout << "Scan vector for filter??" << std::endl;
 	state.previous_states.clear();
 	if (state.version != version) {
 		InitializeScanWithOffset(state, state.row_index);
@@ -198,6 +199,7 @@ idx_t ColumnData::ScanCount(ColumnScanState &state, Vector &result, idx_t count)
 
 void ColumnData::Select(TransactionData transaction, idx_t vector_index, ColumnScanState &state, Vector &result,
                         SelectionVector &sel, idx_t &count, const TableFilter &filter) {
+	std::cout << "Filtering??" << std::endl;
 	idx_t scan_count = Scan(transaction, vector_index, state, result);
 	result.Flatten(scan_count);
 	ColumnSegment::FilterSelection(sel, result, filter, count, FlatVector::Validity(result));
@@ -205,12 +207,14 @@ void ColumnData::Select(TransactionData transaction, idx_t vector_index, ColumnS
 
 void ColumnData::FilterScan(TransactionData transaction, idx_t vector_index, ColumnScanState &state, Vector &result,
                             SelectionVector &sel, idx_t count) {
+	std::cout << "Filter scan" << std::endl;
 	Scan(transaction, vector_index, state, result);
 	result.Slice(sel, count);
 }
 
 void ColumnData::FilterScanCommitted(idx_t vector_index, ColumnScanState &state, Vector &result, SelectionVector &sel,
                                      idx_t count, bool allow_updates) {
+	std::cout << "Filter scan commited" << std::endl;
 	ScanCommitted(vector_index, state, result, allow_updates);
 	result.Slice(sel, count);
 }

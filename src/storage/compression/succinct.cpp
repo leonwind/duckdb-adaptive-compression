@@ -121,6 +121,7 @@ void FinalizeCompress(CompressionState &state_p) {
 template <class T>
 void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t scan_count, Vector &result,
                          idx_t result_offset) {
+	std::cout << "Succinct Partial Scan" << std::endl;
 	auto start = segment.GetRelativeIndex(state.row_index);
 	auto source = segment.succinct_vec;
 	result.SetVectorType(VectorType::FLAT_VECTOR);
@@ -130,6 +131,7 @@ void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t s
 		//std::cout << "target ptr idx: " << i * sizeof(T) << ", source idx: " << start + i << std::endl;
 
 		auto entry_at_i = source[start + i] + segment.GetCommonMinFactor();
+		//std::cout << "Entry at i: " << entry_at_i << ", common min factor: " << segment.GetCommonMinFactor() << std::endl;
 		// target_ptr is always an uint8_t ptr.
 		// The succinct vector however can be up to 64 bit.
 		// Since we can only load 8 bit at once into the target,
@@ -150,6 +152,7 @@ void SuccinctScan(ColumnSegment &segment, ColumnScanState &state, idx_t scan_cou
 template <class T>
 void SuccinctFetchRow(ColumnSegment &segment, ColumnFetchState &state, row_t row_id, Vector &result,
                       idx_t result_idx) {
+	std::cout << "Succinct Fetch row" << std::endl;
 	auto source = segment.succinct_vec;
 
 	data_ptr_t target_ptr = FlatVector::GetData(result) + result_idx * sizeof(T);
@@ -160,7 +163,7 @@ void SuccinctFetchRow(ColumnSegment &segment, ColumnFetchState &state, row_t row
 		}
 
 		for (idx_t j = 0; j < source.width() / 8; ++j) {
-			target_ptr[i * sizeof(T) + j] = entry_at_i >> j * 8;
+			target_ptr[i * sizeof(T) + j] = entry_at_i << j * 8;
 		}
 	}
 }
@@ -234,7 +237,7 @@ idx_t SuccinctAppend(CompressionAppendState &append_state, ColumnSegment &segmen
 template <class T>
 idx_t SuccinctFinalizeAppend(ColumnSegment &segment, SegmentStatistics &stats) {
 	//std::cout << "Compact succinct vector" << std::endl;
-	sdsl::util::bit_compress(segment.succinct_vec);
+	//sdsl::util::bit_compress(segment.succinct_vec);
 	//std::cout << "Finalize succinct append" << std::endl;
 	return segment.count * sizeof(T);
 }

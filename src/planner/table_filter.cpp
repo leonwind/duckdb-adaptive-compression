@@ -7,6 +7,7 @@
 namespace duckdb {
 
 void TableFilterSet::PushFilter(idx_t column_index, unique_ptr<TableFilter> filter) {
+	std::cout << "Push filter down: " << filter->ToString("i") << std::endl;
 	auto entry = filters.find(column_index);
 	if (entry == filters.end()) {
 		// no filter yet: push the filter directly

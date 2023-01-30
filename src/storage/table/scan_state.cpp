@@ -9,6 +9,7 @@ void TableScanState::Initialize(vector<column_t> column_ids, TableFilterSet *tab
 	this->column_ids = move(column_ids);
 	this->table_filters = table_filters;
 	if (table_filters) {
+		std::cout << "Still have filters?" << std::endl;
 		D_ASSERT(table_filters->filters.size() > 0);
 		this->adaptive_filter = make_unique<AdaptiveFilter>(table_filters);
 	}

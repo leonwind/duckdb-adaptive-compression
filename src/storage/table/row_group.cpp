@@ -97,9 +97,12 @@ bool RowGroup::InitializeScanWithOffset(RowGroupScanState &state, idx_t vector_o
 	auto filters = state.GetFilters();
 	auto parent_max_row = state.GetParentMaxRow();
 	if (filters) {
+		std::cout << "Have filters" << std::endl;
 		if (!CheckZonemap(*filters, column_ids)) {
 			return false;
 		}
+	} else {
+		std::cout << "Have no filters" << std::endl;
 	}
 
 	state.row_group = this;
@@ -271,6 +274,7 @@ void RowGroup::NextVector(RowGroupScanState &state) {
 
 bool RowGroup::CheckZonemap(TableFilterSet &filters, const vector<column_t> &column_ids) {
 	for (auto &entry : filters.filters) {
+		std::cout << "Filter entry: " << entry.second->ToString("i") << std::endl;
 		auto column_index = entry.first;
 		auto &filter = entry.second;
 		auto base_column_index = column_ids[column_index];
@@ -291,6 +295,7 @@ bool RowGroup::CheckZonemapSegments(RowGroupScanState &state) {
 		return true;
 	}
 	for (auto &entry : filters->filters) {
+		std::cout << "HERE I AM" << std::endl;
 		D_ASSERT(entry.first < column_ids.size());
 		auto column_idx = entry.first;
 		auto base_column_idx = column_ids[column_idx];
@@ -327,6 +332,13 @@ void RowGroup::TemplatedScan(TransactionData transaction, RowGroupScanState &sta
 	auto table_filters = state.GetFilters();
 	auto &column_ids = state.GetColumnIds();
 	auto adaptive_filter = state.GetAdaptiveFilter();
+	std::cout << "Templated scan in row group" << std::endl;
+	if (!table_filters) {
+		std::cout << "No filterssss :(" << std::endl;
+	} else {
+		std::cout << "Yes filtersss" << std::endl;
+	}
+
 	while (true) {
 		if (state.vector_index * STANDARD_VECTOR_SIZE >= state.max_row) {
 			// exceeded the amount of rows to scan
@@ -337,8 +349,10 @@ void RowGroup::TemplatedScan(TransactionData transaction, RowGroupScanState &sta
 
 		//! first check the zonemap if we have to scan this partition
 		if (!CheckZonemapSegments(state)) {
+			std::cout << "DONT SCAN DUE TO ZONEMAP SEGMENT" << std::endl;
 			continue;
 		}
+		std::cout << "Scan" << std::endl;
 		// second, scan the version chunk manager to figure out which tuples to load for this transaction
 		idx_t count;
 		SelectionVector valid_sel(STANDARD_VECTOR_SIZE);
@@ -390,6 +404,7 @@ void RowGroup::TemplatedScan(TransactionData transaction, RowGroupScanState &sta
 			//! get runtime statistics
 			auto start_time = high_resolution_clock::now();
 			if (table_filters) {
+				std::cout << "BEFORE ASSERTS" << std::endl;
 				D_ASSERT(adaptive_filter);
 				D_ASSERT(ALLOW_UPDATES);
 				for (idx_t i = 0; i < table_filters->filters.size(); i++) {

@@ -73,6 +73,7 @@ static unique_ptr<LocalTableFunctionState> TableScanInitLocal(ExecutionContext &
 		col = storage_idx;
 	}
 	result->scan_state.Initialize(move(column_ids), input.filters);
+	std::cout << "[TS] HERE I AM" << std::endl;
 	TableScanParallelStateNext(context.client, input.bind_data, result.get(), gstate);
 	if (input.CanRemoveFilterColumns()) {
 		auto &tsgs = (TableScanGlobalState &)*gstate;
@@ -117,11 +118,19 @@ static void TableScanFunc(ClientContext &context, TableFunctionInput &data_p, Da
 	auto &gstate = (TableScanGlobalState &)*data_p.global_state;
 	auto &state = (TableScanLocalState &)*data_p.local_state;
 	auto &transaction = Transaction::Get(context, *bind_data.table->catalog);
+
+	if (state.scan_state.GetFilters()) {
+		std::cout << "[Table Scan Func] Filters in table scan func" << std::endl;
+	} else {
+		std::cout << "[Table Scan Func] NO Filters in table scan func" << std::endl;
+	}
+
 	do {
 		if (bind_data.is_create_index) {
 			bind_data.table->storage->CreateIndexScan(
 			    state.scan_state, output, TableScanType::TABLE_SCAN_COMMITTED_ROWS_OMIT_PERMANENTLY_DELETED);
 		} else if (gstate.CanRemoveFilterColumns()) {
+			std::cout << "In removing filter columns??" << std::endl;
 			state.all_columns.Reset();
 			bind_data.table->storage->Scan(transaction, state.all_columns, state.scan_state);
 			output.ReferenceColumns(state.all_columns, gstate.projection_ids);
@@ -132,6 +141,7 @@ static void TableScanFunc(ClientContext &context, TableFunctionInput &data_p, Da
 			gstate.row_count += output.size();
 			return;
 		}
+		std::cout << "Before parallel table scan next" << std::endl;
 		if (!TableScanParallelStateNext(context, data_p.bind_data, data_p.local_state, data_p.global_state)) {
 			return;
 		}
@@ -145,6 +155,12 @@ bool TableScanParallelStateNext(ClientContext &context, const FunctionData *bind
 	auto &state = (TableScanLocalState &)*local_state;
 
 	lock_guard<mutex> parallel_lock(parallel_state.lock);
+	if (state.scan_state.GetFilters()) {
+		std::cout << "[Table Scan] Filters in table scan" << std::endl;
+	} else {
+		std::cout << "[Table Scan] NO Filters in table scan" << std::endl;
+	}
+
 	return bind_data.table->storage->NextParallelScan(context, parallel_state.state, state.scan_state);
 }
 

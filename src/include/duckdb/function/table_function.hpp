@@ -14,6 +14,7 @@
 #include "duckdb/storage/statistics/node_statistics.hpp"
 
 #include <functional>
+#include <iostream>
 
 namespace duckdb {
 
@@ -62,6 +63,11 @@ struct TableFunctionInitInput {
 	TableFunctionInitInput(const FunctionData *bind_data_p, const vector<column_t> &column_ids_p,
 	                       const vector<idx_t> &projection_ids_p, TableFilterSet *filters_p)
 	    : bind_data(bind_data_p), column_ids(column_ids_p), projection_ids(projection_ids_p), filters(filters_p) {
+		if (filters_p) {
+			std::cout << "[TABLE FUNCTION Init] still have filters" << std::endl;
+		} else {
+			std::cout << "[TABLE FUNCTION Init] no filters" << std::endl;
+		}
 	}
 
 	const FunctionData *bind_data;
@@ -72,12 +78,15 @@ struct TableFunctionInitInput {
 	bool CanRemoveFilterColumns() const {
 		if (projection_ids.empty()) {
 			// Not set, can't remove filter columns
+			std::cout << "Can remove filter columns: false" << std::endl;
 			return false;
 		} else if (projection_ids.size() == column_ids.size()) {
 			// Filter column is used in remainder of plan, can't remove
+			std::cout << "Can remove filter columns: false" << std::endl;
 			return false;
 		} else {
 			// Less columns need to be projected out than that we scan
+			std::cout << "Can remove filter columns: true" << std::endl;
 			return true;
 		}
 	}

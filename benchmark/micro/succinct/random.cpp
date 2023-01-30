@@ -21,6 +21,10 @@ void Load(DuckDBBenchmarkState *state) override {
 		appender.Append<int32_t>(rand() % NUM_INSERTS);
 		appender.EndRow();
 	}
+
+	std::cout << "Used after insert memory: "
+	          << state->db.instance->GetBufferManager().GetUsedMemory()
+	          << std::endl;
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
@@ -57,6 +61,10 @@ void Load(DuckDBBenchmarkState *state) override {
 		appender.Append<int32_t>(random() % NUM_INSERTS);
 		appender.EndRow();
 	}
+
+	std::cout << "Used after insert memory: "
+	          << state->db.instance->GetBufferManager().GetUsedMemory()
+	          << std::endl;
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {

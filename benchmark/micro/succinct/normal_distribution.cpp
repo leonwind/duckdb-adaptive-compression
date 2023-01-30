@@ -9,8 +9,9 @@
 using namespace duckdb;
 
 #define NUM_INSERTS 1000000
+#define NUM_LOOKUPS 10000
 
-DUCKDB_BENCHMARK(SuccinctSequentialInsert, "[succinct]")
+DUCKDB_BENCHMARK(SuccinctNormalDistribution, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
 	state->conn.Query("CREATE TABLE t1(i INTEGER);");
 
@@ -27,9 +28,20 @@ void Load(DuckDBBenchmarkState *state) override {
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
+	std::random_device rd{};
+    std::mt19937 gen{rd()};
+	std::normal_distribution<> normal{
+	    /* mean= */ std::round(NUM_INSERTS / 2),
+	    /* stddev= */ std::round(NUM_INSERTS) / 4};
+
 	state->conn.Query("BEGIN TRANSACTION");
-	state->result = state->conn.Query("SELECT * FROM t1");
+	for (int i = 0; i < NUM_LOOKUPS; i++) {
+		auto query_string = "SELECT i FROM t1 where i == " +
+		                    to_string(std::round(normal(gen)));
+		state->conn.Query(query_string);
+	}
 	state->conn.Query("COMMIT");
+
 	std::cout << "Used memory: "
 	          << state->db.instance->GetBufferManager().GetUsedMemory()
 	          << std::endl;
@@ -46,9 +58,9 @@ string BenchmarkInfo() override {
 bool InMemory() override {
 	return true;
 }
-FINISH_BENCHMARK(SuccinctSequentialInsert)
+FINISH_BENCHMARK(SuccinctNormalDistribution)
 
-DUCKDB_BENCHMARK(NonSuccinctSequentialInsert, "[succinct]")
+DUCKDB_BENCHMARK(NonSuccinctNormalDistribution, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
 	state->db.instance->GetBufferManager().DisableSuccinct();
 
@@ -66,9 +78,20 @@ void Load(DuckDBBenchmarkState *state) override {
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
-	state->conn.Query("BEGIN TRANSACTION");
-	state->result = state->conn.Query("SELECT * FROM t1");
-	state->conn.Query("COMMIT");
+	std::random_device rd{};
+    std::mt19937 gen{rd()};
+	std::normal_distribution<> normal{
+	    /* mean= */ std::round(NUM_INSERTS / 2),
+	    /* stddev= */ std::round(NUM_INSERTS) / 4};
+
+	for (int i = 0; i < NUM_LOOKUPS; i++) {
+		auto query_string = "SELECT i FROM t1 where i == " +
+		                    to_string(std::round(normal(gen)));
+		state->conn.Query("BEGIN TRANSACTION");
+		state->conn.Query(query_string);
+		state->conn.Query("COMMIT");
+	}
+
 	std::cout << "Used memory: "
 	          << state->db.instance->GetBufferManager().GetUsedMemory()
 	          << std::endl;
@@ -85,4 +108,4 @@ string BenchmarkInfo() override {
 bool InMemory() override {
 	return true;
 }
-FINISH_BENCHMARK(NonSuccinctSequentialInsert)
+FINISH_BENCHMARK(NonSuccinctNormalDistribution)

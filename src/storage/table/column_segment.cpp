@@ -60,6 +60,7 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 		} else {
 			buffer_manager.Allocate(segment_size, false, &block);
 		}
+		buffer_manager.AddOnlyToDataSize(segment_size);
 	}
 	//std::cout << "Current used memory " << buffer_manager.GetUsedMemory() << std::endl;
 

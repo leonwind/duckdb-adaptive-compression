@@ -30,13 +30,14 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("BEGIN TRANSACTION");
 	state->result = state->conn.Query("SELECT * FROM t1");
 	state->conn.Query("COMMIT");
+
 	std::cout << "Used memory: "
 	          << state->db.instance->GetBufferManager().GetUsedMemory()
 	          << std::endl;
 }
 
 string VerifyResult(QueryResult *result) override {
-    return string();
+    return result->ToString();
 }
 
 string BenchmarkInfo() override {
@@ -69,13 +70,14 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("BEGIN TRANSACTION");
 	state->result = state->conn.Query("SELECT * FROM t1");
 	state->conn.Query("COMMIT");
+
 	std::cout << "Used memory: "
 	          << state->db.instance->GetBufferManager().GetUsedMemory()
 	          << std::endl;
 }
 
 string VerifyResult(QueryResult *result) override {
-    return string();
+	return result->ToString();
 }
 
 string BenchmarkInfo() override {

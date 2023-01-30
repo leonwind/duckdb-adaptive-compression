@@ -81,6 +81,10 @@ public:
 		data_size += new_data;
 	}
 
+	void AddOnlyToDataSize(idx_t new_data) {
+		data_size += new_data;
+	}
+
 	idx_t GetDataSize() const {
 		return data_size;
 	}

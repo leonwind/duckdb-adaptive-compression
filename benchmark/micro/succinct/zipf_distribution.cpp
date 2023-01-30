@@ -11,6 +11,7 @@ using namespace duckdb;
 
 #define NUM_INSERTS 1000000
 #define NUM_LOOKUPS 10000
+#define ZIPF_K 3
 
 DUCKDB_BENCHMARK(SuccinctZipfDistribution, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
@@ -31,13 +32,13 @@ void Load(DuckDBBenchmarkState *state) override {
 void RunBenchmark(DuckDBBenchmarkState *state) override {
 	std::random_device rd{};
     std::mt19937 gen{rd()};
-	Zipf<uint32_t, double> zipf(NUM_INSERTS);
+	Zipf<uint32_t, double> zipf(NUM_INSERTS, ZIPF_K);
 
 	state->conn.Query("BEGIN TRANSACTION");
-	for (int i = 0; i < NUM_LOOKUPS; i++) {
-		auto query_string = "SELECT i FROM t1 where i == " +
-		                    to_string(uint32_t(std::round(zipf(gen))));
-		state->conn.Query(query_string);
+	for (int i = 0; i < NUM_LOOKUPS; ++i) {
+		auto val = uint32_t(std::round(zipf(gen)));
+		auto query_string = "SELECT i FROM t1 where i == " + std::to_string(val);
+		state->result = state->conn.Query(query_string);
 	}
 	state->conn.Query("COMMIT");
 
@@ -47,7 +48,8 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 }
 
 string VerifyResult(QueryResult *result) override {
-    return string();
+	std::cout << "Size: " << result->ColumnCount() << std::endl;
+    return result->ToString();
 }
 
 string BenchmarkInfo() override {
@@ -79,15 +81,15 @@ void Load(DuckDBBenchmarkState *state) override {
 void RunBenchmark(DuckDBBenchmarkState *state) override {
 	std::random_device rd{};
     std::mt19937 gen{rd()};
-	Zipf<uint32_t, double> zipf(NUM_INSERTS);
+	Zipf<uint32_t, double> zipf(NUM_INSERTS, ZIPF_K);
 
-	for (int i = 0; i < NUM_LOOKUPS; i++) {
-		auto query_string = "SELECT i FROM t1 where i == " +
-		                    to_string(uint32_t(std::round(zipf(gen))));
-		state->conn.Query("BEGIN TRANSACTION");
-		state->conn.Query(query_string);
-		state->conn.Query("COMMIT");
+	state->conn.Query("BEGIN TRANSACTION");
+	for (int i = 0; i < NUM_LOOKUPS; ++i) {
+		auto val = uint32_t(std::round(zipf(gen)));
+		auto query_string = "SELECT t1.i FROM t1 where i == " + std::to_string(val);
+		state->result = state->conn.Query(query_string);
 	}
+	state->conn.Query("COMMIT");
 
 	std::cout << "Used memory: "
 	          << state->db.instance->GetBufferManager().GetUsedMemory()
@@ -95,7 +97,7 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 }
 
 string VerifyResult(QueryResult *result) override {
-    return string();
+    return result->ToString();
 }
 
 string BenchmarkInfo() override {

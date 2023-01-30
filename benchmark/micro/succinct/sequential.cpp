@@ -8,7 +8,7 @@
 
 using namespace duckdb;
 
-#define NUM_INSERTS 1000000
+#define NUM_INSERTS 10
 
 DUCKDB_BENCHMARK(SuccinctSequentialInsert, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
@@ -27,8 +27,10 @@ void Load(DuckDBBenchmarkState *state) override {
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
+	auto query_string = "SELECT * FROM t1 where i < 5";
+	std::cout << "Query string: " << query_string << std::endl;
 	state->conn.Query("BEGIN TRANSACTION");
-	state->result = state->conn.Query("SELECT * FROM t1");
+	state->result = state->conn.Query(query_string);
 	state->conn.Query("COMMIT");
 	std::cout << "Used memory: "
 	          << state->db.instance->GetBufferManager().GetUsedMemory()
@@ -36,7 +38,7 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 }
 
 string VerifyResult(QueryResult *result) override {
-    return string();
+    return result->ToString();
 }
 
 string BenchmarkInfo() override {
@@ -66,8 +68,10 @@ void Load(DuckDBBenchmarkState *state) override {
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
+	auto query_string = "SELECT * FROM t1 where i < 5";
+	std::cout << "Query string: " << query_string << std::endl;
 	state->conn.Query("BEGIN TRANSACTION");
-	state->result = state->conn.Query("SELECT * FROM t1");
+	state->result = state->conn.Query(query_string);
 	state->conn.Query("COMMIT");
 	std::cout << "Used memory: "
 	          << state->db.instance->GetBufferManager().GetUsedMemory()
@@ -75,7 +79,7 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 }
 
 string VerifyResult(QueryResult *result) override {
-    return string();
+	return result->ToString();
 }
 
 string BenchmarkInfo() override {

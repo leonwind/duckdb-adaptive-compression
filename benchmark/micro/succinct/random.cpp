@@ -33,6 +33,8 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("COMMIT");
 	std::cout << "Used memory: "
 	          << state->db.instance->GetBufferManager().GetUsedMemory()
+	          << ", Data allocated: "
+	          << state->db.instance->GetBufferManager().GetDataSize()
 	          << std::endl;
 }
 
@@ -73,6 +75,8 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("COMMIT");
 	std::cout << "Used memory: "
 	          << state->db.instance->GetBufferManager().GetUsedMemory()
+	          << ", Data allocated: "
+	          << state->db.instance->GetBufferManager().GetDataSize()
 	          << std::endl;
 }
 

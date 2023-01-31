@@ -13,12 +13,12 @@ using namespace duckdb;
 
 DUCKDB_BENCHMARK(SuccinctNormalDistribution, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
-	state->conn.Query("CREATE TABLE t1(i INTEGER);");
+	state->conn.Query("CREATE TABLE t1(i UINTEGER);");
 
 	Appender appender(state->conn, "t1");
 	for (size_t i = 0; i < NUM_INSERTS; i++) {
 		appender.BeginRow();
-		appender.Append<int32_t>(i);
+		appender.Append<uint32_t>(i);
 		appender.EndRow();
 	}
 
@@ -64,11 +64,11 @@ DUCKDB_BENCHMARK(NonSuccinctNormalDistribution, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
 	state->db.instance->GetBufferManager().DisableSuccinct();
 
-	state->conn.Query("CREATE TABLE t1(i INTEGER);");
+	state->conn.Query("CREATE TABLE t1(i UINTEGER);");
 	Appender appender(state->conn, "t1");
 	for (size_t i = 0; i < NUM_INSERTS; i++) {
 		appender.BeginRow();
-		appender.Append<int32_t>(i);
+		appender.Append<uint32_t>(i);
 		appender.EndRow();
 	}
 

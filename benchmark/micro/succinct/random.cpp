@@ -18,7 +18,7 @@ void Load(DuckDBBenchmarkState *state) override {
 	Appender appender(state->conn, "t1");
 	for (size_t i = 0; i < NUM_INSERTS; i++) {
 		appender.BeginRow();
-		appender.Append<int32_t>(rand() % NUM_INSERTS);
+		appender.Append<uint32_t>(rand() % NUM_INSERTS);
 		appender.EndRow();
 	}
 
@@ -33,8 +33,6 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("COMMIT");
 	std::cout << "Used memory: "
 	          << state->db.instance->GetBufferManager().GetUsedMemory()
-	          << ", Data allocated: "
-	          << state->db.instance->GetBufferManager().GetDataSize()
 	          << std::endl;
 }
 
@@ -60,7 +58,7 @@ void Load(DuckDBBenchmarkState *state) override {
 	Appender appender(state->conn, "t1");
 	for (size_t i = 0; i < NUM_INSERTS; i++) {
 		appender.BeginRow();
-		appender.Append<int32_t>(random() % NUM_INSERTS);
+		appender.Append<uint32_t>(random() % NUM_INSERTS);
 		appender.EndRow();
 	}
 
@@ -75,8 +73,6 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("COMMIT");
 	std::cout << "Used memory: "
 	          << state->db.instance->GetBufferManager().GetUsedMemory()
-	          << ", Data allocated: "
-	          << state->db.instance->GetBufferManager().GetDataSize()
 	          << std::endl;
 }
 

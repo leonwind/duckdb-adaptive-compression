@@ -88,7 +88,8 @@ unique_ptr<CompressionState> InitCompression(ColumnDataCheckpointer &checkpointe
 }
 
 void Compress(CompressionState &state_p, Vector &data, idx_t count) {
-	//std::cout << "Compress" << std::endl;
+	std::cout << "[Succinct Compress] SHOULD NOT HAPPEN" << std::endl;
+
 	auto &state = (SuccinctCompressState &)state_p;
 	UnifiedVectorFormat vdata;
 	data.ToUnifiedFormat(count, vdata);
@@ -134,9 +135,7 @@ void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t s
 		// The succinct vector however can be up to 64 bit.
 		// Since we can only load 8 bit at once into the target,
 		// we need to do it succinct.width() / 8 times.
-		for (idx_t j = 0; j < source.width() / 8; ++j) {
-			target_ptr[i * sizeof(T) + j] = entry_at_i >> j * 8;
-		}
+		memcpy(target_ptr + i * sizeof(T), &entry_at_i, sizeof(T));
 	}
 }
 

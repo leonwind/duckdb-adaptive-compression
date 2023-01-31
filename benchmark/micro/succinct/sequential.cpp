@@ -37,7 +37,7 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 }
 
 string VerifyResult(QueryResult *result) override {
-    return result->ToString();
+    return string();
 }
 
 string BenchmarkInfo() override {
@@ -77,7 +77,7 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 }
 
 string VerifyResult(QueryResult *result) override {
-	return result->ToString();
+	return string();
 }
 
 string BenchmarkInfo() override {

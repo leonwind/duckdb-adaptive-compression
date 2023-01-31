@@ -15,12 +15,12 @@ using namespace duckdb;
 
 DUCKDB_BENCHMARK(SuccinctZipfDistribution, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
-	state->conn.Query("CREATE TABLE t1(i INTEGER);");
+	state->conn.Query("CREATE TABLE t1(i UINTEGER);");
 
 	Appender appender(state->conn, "t1");
 	for (size_t i = 0; i < NUM_INSERTS; i++) {
 		appender.BeginRow();
-		appender.Append<int32_t>(i);
+		appender.Append<uint32_t>(i);
 		appender.EndRow();
 	}
 
@@ -48,8 +48,7 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 }
 
 string VerifyResult(QueryResult *result) override {
-	std::cout << "Size: " << result->ColumnCount() << std::endl;
-    return result->ToString();
+	return string();
 }
 
 string BenchmarkInfo() override {
@@ -65,11 +64,11 @@ DUCKDB_BENCHMARK(NonSuccinctZipfDistribution, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
 	state->db.instance->GetBufferManager().DisableSuccinct();
 
-	state->conn.Query("CREATE TABLE t1(i INTEGER);");
+	state->conn.Query("CREATE TABLE t1(i UINTEGER);");
 	Appender appender(state->conn, "t1");
 	for (size_t i = 0; i < NUM_INSERTS; i++) {
 		appender.BeginRow();
-		appender.Append<int32_t>(i);
+		appender.Append<uint32_t>(i);
 		appender.EndRow();
 	}
 
@@ -97,7 +96,7 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 }
 
 string VerifyResult(QueryResult *result) override {
-    return result->ToString();
+    return string();
 }
 
 string BenchmarkInfo() override {

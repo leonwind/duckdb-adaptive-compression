@@ -51,6 +51,11 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 		std::cout << "Create SUCCINCT transient segment" << std::endl;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
 		block = buffer_manager.RegisterSmallMemory(0);
+		if (segment_size < Storage::BLOCK_SIZE) {
+			block = buffer_manager.RegisterSmallMemory(segment_size);
+		} else {
+			buffer_manager.Allocate(segment_size, false, &block);
+		}
 	} else {
 		std::cout << "Create UNCOMPRESSED transient segment" << std::endl;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_UNCOMPRESSED, type.InternalType());

@@ -254,15 +254,19 @@ CompressionFunction SuccinctGetFunction(PhysicalType type) {
 CompressionFunction SuccinctFun::GetFunction(PhysicalType data_type) {
 	switch (data_type) {
 	case PhysicalType::INT8:
+		return SuccinctGetFunction<int8_t>(data_type);
 	case PhysicalType::UINT8:
 		return SuccinctGetFunction<uint8_t>(data_type);
 	case PhysicalType::INT16:
+		return SuccinctGetFunction<int16_t>(data_type);
 	case PhysicalType::UINT16:
 		return SuccinctGetFunction<uint16_t>(data_type);
 	case PhysicalType::INT32:
+		return SuccinctGetFunction<int32_t>(data_type);
 	case PhysicalType::UINT32:
 		return SuccinctGetFunction<uint32_t>(data_type);
 	case PhysicalType::INT64:
+		return SuccinctGetFunction<int64_t>(data_type);
 	case PhysicalType::UINT64:
 		return SuccinctGetFunction<uint64_t>(data_type);
 	default:

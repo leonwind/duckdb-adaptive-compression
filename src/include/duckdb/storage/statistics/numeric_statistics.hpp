@@ -19,6 +19,8 @@
 #include "duckdb/common/windows_undefs.hpp"
 #include "duckdb/common/enums/filter_propagate_result.hpp"
 
+#include <iostream>
+
 namespace duckdb {
 
 class NumericStatistics : public BaseStatistics {
@@ -63,7 +65,13 @@ public:
 	template <class T>
 	static inline void Update(SegmentStatistics &stats, T new_value) {
 		auto &nstats = (NumericStatistics &)*stats.statistics;
+		std::cout << "Before: "
+				  << nstats.ToString()
+				  << std::endl;
 		UpdateValue<T>(new_value, nstats.min.GetReferenceUnsafe<T>(), nstats.max.GetReferenceUnsafe<T>());
+		std::cout << "After: "
+				  << nstats.ToString()
+				  << std::endl;
 	}
 };
 

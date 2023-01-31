@@ -17,6 +17,7 @@ void StatisticsPropagator::ReplaceWithEmptyResult(unique_ptr<LogicalOperator> &n
 unique_ptr<NodeStatistics> StatisticsPropagator::PropagateChildren(LogicalOperator &node,
                                                                    unique_ptr<LogicalOperator> *node_ptr) {
 	for (idx_t child_idx = 0; child_idx < node.children.size(); child_idx++) {
+		std::cout << "Propagate loop: " << node.children[child_idx]->ToString() << std::endl;
 		PropagateStatistics(node.children[child_idx]);
 	}
 	return nullptr;
@@ -24,6 +25,7 @@ unique_ptr<NodeStatistics> StatisticsPropagator::PropagateChildren(LogicalOperat
 
 unique_ptr<NodeStatistics> StatisticsPropagator::PropagateStatistics(LogicalOperator &node,
                                                                      unique_ptr<LogicalOperator> *node_ptr) {
+	std::cout << "Propagagate statistics: " << LogicalOperatorToString(node.type) << std::endl;
 	switch (node.type) {
 	case LogicalOperatorType::LOGICAL_AGGREGATE_AND_GROUP_BY:
 		return PropagateStatistics((LogicalAggregate &)node, node_ptr);

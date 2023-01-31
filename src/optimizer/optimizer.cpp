@@ -116,6 +116,7 @@ unique_ptr<LogicalOperator> Optimizer::Optimize(unique_ptr<LogicalOperator> plan
 		unused.VisitOperator(*plan);
 	});
 
+	// Statistics removes push down filters
 	// perform statistics propagation
 	RunOptimizer(OptimizerType::STATISTICS_PROPAGATION, [&]() {
 		StatisticsPropagator propagator(context);

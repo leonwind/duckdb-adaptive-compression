@@ -88,7 +88,8 @@ unique_ptr<CompressionState> InitCompression(ColumnDataCheckpointer &checkpointe
 }
 
 void Compress(CompressionState &state_p, Vector &data, idx_t count) {
-	//std::cout << "Compress" << std::endl;
+	std::cout << "[Succinct Compress] SHOULD NOT HAPPEN" << std::endl;
+
 	auto &state = (SuccinctCompressState &)state_p;
 	UnifiedVectorFormat vdata;
 	data.ToUnifiedFormat(count, vdata);
@@ -118,48 +119,29 @@ void FinalizeCompress(CompressionState &state_p) {
 //===--------------------------------------------------------------------===//
 // Scan
 //===--------------------------------------------------------------------===//
-struct SuccinctScanState : public SegmentScanState {
-	BufferHandle handle;
-};
-
-unique_ptr<SegmentScanState> SuccinctScanState(ColumnSegment &segment) {
-	auto result = make_unique<FixedSizeScanState>();
-	auto &buffer_manager = BufferManager::GetBufferManager(segment.db);
-	result->handle = buffer_manager.Pin(segment.block);
-	return move(result);
-}
-
 template <class T>
 void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t scan_count, Vector &result,
                          idx_t result_offset) {
-
-	auto &scan_state = (FixedSizeScanState &)*state.scan_state;
 	auto start = segment.GetRelativeIndex(state.row_index);
-
-	auto data = scan_state.handle.Ptr() + segment.GetBlockOffset();
-	auto source_data = data + start * sizeof(T);
-
-	// copy the data from the base table
+	auto source = segment.succinct_vec;
 	result.SetVectorType(VectorType::FLAT_VECTOR);
-	memcpy(FlatVector::GetData(result) + result_offset * sizeof(T), source_data, scan_count * sizeof(T));
+
+	data_ptr_t target_ptr = FlatVector::GetData(result) + result_offset * sizeof(T);
+	for (idx_t i = 0; i < scan_count; ++i) {
+		//std::cout << "target ptr idx: " << i * sizeof(T) << ", source idx: " << start + i << std::endl;
+
+		auto entry_at_i = source[start + i] + segment.GetCommonMinFactor();
+		// target_ptr is always an uint8_t ptr.
+		// The succinct vector however can be up to 64 bit.
+		// Since we can only load 8 bit at once into the target,
+		// we need to do it succinct.width() / 8 times.
+		memcpy(target_ptr + i * sizeof(T), &entry_at_i, sizeof(T));
+	}
 }
 
 template <class T>
 void SuccinctScan(ColumnSegment &segment, ColumnScanState &state, idx_t scan_count, Vector &result) {
-	auto &scan_state = (FixedSizeScanState &)*state.scan_state;
-	auto start = segment.GetRelativeIndex(state.row_index);
-
-	auto data = scan_state.handle.Ptr() + segment.GetBlockOffset();
-	auto source_data = data + start * sizeof(T);
-
-	result.SetVectorType(VectorType::FLAT_VECTOR);
-	if (std::is_same<T, list_entry_t>()) {
-		// list columns are modified in-place during the scans to correct the offsets
-		// so we can't do a zero-copy there
-		memcpy(FlatVector::GetData(result), source_data, scan_count * sizeof(T));
-	} else {
-		FlatVector::SetData(result, source_data);
-	}
+	SuccinctScanPartial<T>(segment, state, scan_count, result, /* result_offset= */ 0);
 }
 //===--------------------------------------------------------------------===//
 // Fetch
@@ -167,13 +149,20 @@ void SuccinctScan(ColumnSegment &segment, ColumnScanState &state, idx_t scan_cou
 template <class T>
 void SuccinctFetchRow(ColumnSegment &segment, ColumnFetchState &state, row_t row_id, Vector &result,
                       idx_t result_idx) {
-	auto &buffer_manager = BufferManager::GetBufferManager(segment.db);
-	auto handle = buffer_manager.Pin(segment.block);
+	std::cout << "Succinct Fetch row" << std::endl;
+	auto source = segment.succinct_vec;
 
-	// first fetch the data from the base table
-	auto data_ptr = handle.Ptr() + segment.GetBlockOffset() + row_id * sizeof(T);
+	data_ptr_t target_ptr = FlatVector::GetData(result) + result_idx * sizeof(T);
+	for (idx_t i = 0; i < source.size(); ++i) {
+		auto entry_at_i = source[i];
+		if (segment.GetCommonMinFactor() != UINT64_MAX) {
+			entry_at_i += segment.GetCommonMinFactor();
+		}
 
-	memcpy(FlatVector::GetData(result) + result_idx * sizeof(T), data_ptr, sizeof(T));
+		for (idx_t j = 0; j < source.width() / 8; ++j) {
+			target_ptr[i * sizeof(T) + j] = entry_at_i >> j * 8;
+		}
+	}
 }
 //===--------------------------------------------------------------------===//
 // Append
@@ -186,10 +175,16 @@ static unique_ptr<CompressionAppendState> SuccinctInitAppend(ColumnSegment &segm
 }
 
 template <class T>
-void SuccinctAppendLoop(SegmentStatistics &stats, data_ptr_t target, idx_t target_offset, UnifiedVectorFormat &adata,
-                       idx_t offset, idx_t count) {
+void SuccinctAppendLoop(SegmentStatistics &stats, sdsl::int_vector<> &target, idx_t target_offset, UnifiedVectorFormat &adata,
+                       idx_t offset, idx_t count, PhysicalType type) {
+
 	auto sdata = (T *)adata.data;
-	auto tdata = (T *)target;
+
+	//std::cout << "target offset " << target_offset << ", count " << count << std::endl;
+	//std::cout << "Succinct size " << target.size() << std::endl;
+	//std::cout << "Append loop" << std::endl;
+
+	std::cout << "Stats before: " << stats.statistics->ToString() << std::endl;
 	if (!adata.validity.AllValid()) {
 		for (idx_t i = 0; i < count; i++) {
 			auto source_idx = adata.sel->get_index(offset + i);
@@ -197,11 +192,13 @@ void SuccinctAppendLoop(SegmentStatistics &stats, data_ptr_t target, idx_t targe
 			bool is_null = !adata.validity.RowIsValid(source_idx);
 			if (!is_null) {
 				NumericStatistics::Update<T>(stats, sdata[source_idx]);
-				tdata[target_idx] = sdata[source_idx];
+
+				std::cout << "[SUCCINCT] Inserting: " << sdata[source_idx] << std::endl;
+				target[target_idx] = sdata[source_idx];
 			} else {
 				// we insert a NullValue<T> in the null gap for debuggability
 				// this value should never be used or read anywhere
-				tdata[target_idx] = NullValue<T>();
+				target[target_idx] = NullValue<T>();
 			}
 		}
 	} else {
@@ -209,20 +206,36 @@ void SuccinctAppendLoop(SegmentStatistics &stats, data_ptr_t target, idx_t targe
 			auto source_idx = adata.sel->get_index(offset + i);
 			auto target_idx = target_offset + i;
 			NumericStatistics::Update<T>(stats, sdata[source_idx]);
-			tdata[target_idx] = sdata[source_idx];
+			//std::cout << "Source: " << sdata[source_idx] << std::endl;
+			target[target_idx] = sdata[source_idx];
 		}
 	}
+	std::cout << "Stats after: " << stats.statistics->ToString() << std::endl;
+	/*
+	NumericStatistics::Update<T>(stats, 100);
+	std::cout << "Stats after update with 100: " << stats.statistics->ToString() << std::endl;
+	NumericStatistics::Update<T>(stats, -100);
+	std::cout << "Stats after update with -100: " << stats.statistics->ToString() << std::endl;
+	NumericStatistics::Update<T>(stats, 99999);
+	std::cout << "Stats after update with 99999: " << stats.statistics->ToString() << std::endl;
+	 */
+	//std::cout << "Before: Size [MB]" << sdsl::size_in_mega_bytes(target) << std::endl;
+	//sdsl::util::bit_compress(target);
+	//std::cout << "After: Size [MB]" << sdsl::size_in_mega_bytes(target) << std::endl;
+	//std::cout << "Inserted " << count << ", vec has size of " << target.size() << std::endl;
+	//std::cout << "Finished succinct append loop" << std::endl;
 }
 
 template <class T>
 idx_t SuccinctAppend(CompressionAppendState &append_state, ColumnSegment &segment, SegmentStatistics &stats,
                       UnifiedVectorFormat &data, idx_t offset, idx_t count) {
 	D_ASSERT(segment.GetBlockOffset() == 0);
-	auto target_ptr = append_state.handle.Ptr();
+	//std::cout << "Start succinct append" << std::endl;
+
 	idx_t max_tuple_count = segment.SegmentSize() / sizeof(T);
 	idx_t copy_count = MinValue<idx_t>(count, max_tuple_count - segment.count);
 
-	SuccinctAppendLoop<T>(stats, target_ptr, segment.count, data, offset, copy_count);
+	SuccinctAppendLoop<T>(stats, segment.succinct_vec, segment.count, data, offset, copy_count, segment.type.InternalType());
 	segment.count += copy_count;
 	return copy_count;
 }
@@ -230,7 +243,7 @@ idx_t SuccinctAppend(CompressionAppendState &append_state, ColumnSegment &segmen
 template <class T>
 idx_t SuccinctFinalizeAppend(ColumnSegment &segment, SegmentStatistics &stats) {
 	//std::cout << "Compact succinct vector" << std::endl;
-	//sdsl::util::bit_compress(segment.succinct_vec);
+	sdsl::util::bit_compress(segment.succinct_vec);
 	//std::cout << "Finalize succinct append" << std::endl;
 	return segment.count * sizeof(T);
 }
@@ -251,19 +264,23 @@ CompressionFunction SuccinctGetFunction(PhysicalType type) {
 CompressionFunction SuccinctFun::GetFunction(PhysicalType data_type) {
 	switch (data_type) {
 	case PhysicalType::INT8:
+		return SuccinctGetFunction<int8_t>(data_type);
 	case PhysicalType::UINT8:
 		return SuccinctGetFunction<uint8_t>(data_type);
 	case PhysicalType::INT16:
+		return SuccinctGetFunction<int16_t>(data_type);
 	case PhysicalType::UINT16:
 		return SuccinctGetFunction<uint16_t>(data_type);
 	case PhysicalType::INT32:
+		return SuccinctGetFunction<int32_t>(data_type);
 	case PhysicalType::UINT32:
 		return SuccinctGetFunction<uint32_t>(data_type);
 	case PhysicalType::INT64:
+		return SuccinctGetFunction<int64_t>(data_type);
 	case PhysicalType::UINT64:
 		return SuccinctGetFunction<uint64_t>(data_type);
 	default:
-		throw InternalException("Unsupported type for FixedSizeSuccinct::GetFunction");
+		throw InternalException("Unsupported type for SuccinctFun::GetFunction");
 	}
 }
 
@@ -282,5 +299,4 @@ bool SuccinctFun::TypeIsSupported(PhysicalType type) {
 		return false;
 	}
 }
-
 }

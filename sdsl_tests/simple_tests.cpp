@@ -113,6 +113,12 @@ void test10() {
 	std::cout << v[0] << std::endl;
 }
 
+void test11() {
+	uint32_t b = 0;
+	int a = b;
+	std::cout << "a val: " << a << std::endl;
+}
+
 int main(){
 	//test1();
 	//test2();
@@ -123,5 +129,6 @@ int main(){
 	//test7();
 	//test8();
 	//test9();
-	test10();
+	//test10();
+	test11();
 }

@@ -94,9 +94,11 @@ FilterResult FilterPushdown::AddFilter(unique_ptr<Expression> expr) {
 
 void FilterPushdown::GenerateFilters() {
 	if (!filters.empty()) {
+		std::cout << "[FILTER PUSHDOWN] filters are empty" << std::endl;
 		D_ASSERT(!combiner.HasFilters());
 		return;
 	}
+	std::cout << "[FILTER PUSHDOWN] filters are NOT empty" << std::endl;
 	combiner.GenerateFilters([&](unique_ptr<Expression> filter) {
 		auto f = make_unique<Filter>();
 		f->filter = move(filter);

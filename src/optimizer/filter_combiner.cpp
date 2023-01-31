@@ -560,7 +560,11 @@ TableFilterSet FilterCombiner::GenerateTableScanFilters(vector<idx_t> &column_id
 	}
 
 	//	GenerateORFilters(table_filters, column_ids);
-
+	if (table_filters.filters.empty()) {
+		std::cout << "[Optimizer Table Combiner] Filters are empty" << std::endl;
+	} else {
+		std::cout << "[Optimizer Table Combiner] Filters exist, size: " << table_filters.filters.size() << std::endl;
+	}
 	return table_filters;
 }
 

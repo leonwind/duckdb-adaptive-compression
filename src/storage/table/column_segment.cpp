@@ -51,11 +51,6 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 		std::cout << "Create SUCCINCT transient segment" << std::endl;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
 		block = buffer_manager.RegisterSmallMemory(0);
-		if (segment_size < Storage::BLOCK_SIZE) {
-			block = buffer_manager.RegisterSmallMemory(segment_size);
-		} else {
-			buffer_manager.Allocate(segment_size, false, &block);
-		}
 	} else {
 		std::cout << "Create UNCOMPRESSED transient segment" << std::endl;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_UNCOMPRESSED, type.InternalType());
@@ -96,6 +91,7 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
 		//sdsl::int_vector<> tmp_v(segment_size / type_size);
 		succinct_vec.width(type_size * 8);
 		succinct_vec.resize(segment_size / type_size);
+		sdsl::util::set_to_value(succinct_vec, UINT64_MAX);
 		//std::cout << "Succinct vec size: " << succinct_vec.size() << ", width: " << (unsigned) succinct_vec.width() << std::endl;
 		//sdsl::util::expand_width(succinct_vec, type_size * 8);
 		//std::cout << "Vec element width " << (size_t) succinct_vec.width() << std::endl;
@@ -214,10 +210,14 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 	//std::cout << "Insert " << count << " of " << segment_size / type_size << std::endl;
 	idx_t copy_count = function->append(*state.append_state, *this, stats, append_data, offset, count);
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
+		std::cout << "Append succinct" << std::endl;
 		if (count == segment_size / type_size) {
 			Compact();
 		}
+	} else {
+		std::cout << "Append uncompressed" << std::endl;
 	}
+
 	return copy_count;
 }
 
@@ -237,7 +237,7 @@ void ColumnSegment::Compact() {
 	std::cout << "Size after: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
 	 */
 	//std::cout << "Compact succinct vector" << std::endl;
-	ExtractCommonMinFactor();
+	//ExtractCommonMinFactor();
 	sdsl::util::bit_compress(succinct_vec);
 	compacted = true;
 

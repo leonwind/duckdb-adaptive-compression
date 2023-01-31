@@ -4,6 +4,8 @@
 #include "duckdb/common/operator/comparison_operators.hpp"
 #include "duckdb/common/types/vector.hpp"
 
+#include <iostream>
+
 namespace duckdb {
 
 template <>
@@ -102,6 +104,7 @@ FilterPropagateResult NumericStatistics::CheckZonemap(ExpressionType comparison_
 		// X < C
 		// this can be true only if min(X) < C
 		// if max(X) < C, then this is always true
+		std::cout << "Max is: " << max << ", constant: " << constant << std::endl;
 		if (max < constant) {
 			return FilterPropagateResult::FILTER_ALWAYS_TRUE;
 		} else if (min < constant) {

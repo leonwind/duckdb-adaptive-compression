@@ -80,6 +80,7 @@ unique_ptr<NodeStatistics> StatisticsPropagator::PropagateStatistics(LogicalGet 
 		case FilterPropagateResult::FILTER_ALWAYS_TRUE:
 			// filter is always true; it is useless to execute it
 			// erase this condition
+			std::cout << "FILTER IS ALWAYS TRUEEEE -> GETS ERASED" << std::endl;
 			get.table_filters.filters.erase(table_filter_column);
 			break;
 		case FilterPropagateResult::FILTER_FALSE_OR_NULL:

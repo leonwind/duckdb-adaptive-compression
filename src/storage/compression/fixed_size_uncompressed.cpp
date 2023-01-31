@@ -199,6 +199,8 @@ static void AppendLoop(SegmentStatistics &stats, data_ptr_t target, idx_t target
 			bool is_null = !adata.validity.RowIsValid(source_idx);
 			if (!is_null) {
 				NumericStatistics::Update<T>(stats, sdata[source_idx]);
+
+				std::cout << "[UNCOMPRESSED] Inserting " << adata.data[source_idx] << std::endl;
 				tdata[target_idx] = sdata[source_idx];
 			} else {
 				// we insert a NullValue<T> in the null gap for debuggability
@@ -208,6 +210,7 @@ static void AppendLoop(SegmentStatistics &stats, data_ptr_t target, idx_t target
 		}
 	} else {
 		for (idx_t i = 0; i < count; i++) {
+
 			auto source_idx = adata.sel->get_index(offset + i);
 			auto target_idx = target_offset + i;
 			NumericStatistics::Update<T>(stats, sdata[source_idx]);

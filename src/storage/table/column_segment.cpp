@@ -47,7 +47,7 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 	shared_ptr<BlockHandle> block;
 	//std::cout << "Create transient segment with size " << segment_size << std::endl;
 
-	if (TypeIsInteger(type.InternalType()) && buffer_manager.IsSuccinctEnabled()) {
+	if (TypeIsInteger(type.InternalType()) && config.succinct_enabled) {
 		//std::cout << "Create SUCCINCT transient segment" << std::endl;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
 		block = buffer_manager.RegisterSmallMemory(0);
@@ -230,8 +230,18 @@ void ColumnSegment::Compact() {
 	std::cout << "Size after: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
 	 */
 
-	ExtractCommonMinFactor();
+	if (DBConfig::GetConfig(db).succinct_extract_prefix_enabled) {
+		ExtractCommonMinFactor();
+	}
+
 	sdsl::util::bit_compress(succinct_vec);
+	if (DBConfig::GetConfig(db).succinct_padded_to_next_byte_enabled) {
+		idx_t min_width = succinct_vec.width();
+		idx_t new_padded_width = ((min_width + 7) & (-8));
+		sdsl::util::expand_width(succinct_vec, new_padded_width);
+		//std::cout << "Curr width: " << min_width << ", padded to: " << new_padded_width << std::endl;
+	}
+
 	compacted = true;
 
 	BufferManager::GetBufferManager(db).AddToDataSize(sdsl::size_in_bytes(succinct_vec));

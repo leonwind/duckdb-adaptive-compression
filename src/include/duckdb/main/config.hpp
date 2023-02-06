@@ -145,6 +145,8 @@ struct DBConfigOptions {
 	//! Start transactions immediately in all attached databases - instead of lazily when a database is referenced
 	bool immediate_transaction_mode = false;
 
+
+
 	bool operator==(const DBConfigOptions &other) const;
 };
 
@@ -183,6 +185,13 @@ public:
 	shared_ptr<Allocator> default_allocator;
 	//! Extensions made to binder
 	vector<std::unique_ptr<OperatorExtension>> operator_extensions;
+
+	//! Enable usage of succinct compression for in memory data.
+	bool succinct_enabled = true;
+	//! Extract prefix from succinct compression.
+	bool succinct_extract_prefix_enabled = true;
+	//! Enable succinct compression and pad to the next byte.
+	bool succinct_padded_to_next_byte_enabled = false;
 
 public:
 	DUCKDB_API static DBConfig &GetConfig(ClientContext &context);

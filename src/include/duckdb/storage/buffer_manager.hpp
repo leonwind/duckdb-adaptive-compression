@@ -68,14 +68,6 @@ public:
 		return maximum_memory;
 	}
 
-	void DisableSuccinct() {
-		enable_succinct = false;
-	}
-
-	bool IsSuccinctEnabled() {
-		return enable_succinct;
-	}
-
 	void AddToDataSize(idx_t new_data) {
 		current_memory += new_data;
 		data_size += new_data;
@@ -166,8 +158,6 @@ private:
 	void VerifyZeroReaders(shared_ptr<BlockHandle> &handle);
 
 private:
-	bool enable_succinct;
-
 	idx_t data_size;
 	//! The database instance
 	DatabaseInstance &db;

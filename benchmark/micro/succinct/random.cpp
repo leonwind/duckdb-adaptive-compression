@@ -52,7 +52,7 @@ FINISH_BENCHMARK(SuccinctRandomInsert)
 DUCKDB_BENCHMARK(NonSuccinctRandomInsert, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
 	srand((unsigned) time(nullptr));
-	state->db.instance->GetBufferManager().DisableSuccinct();
+	state->db.instance->config.succinct_enabled = false;
 
 	state->conn.Query("CREATE TABLE t1(i INTEGER);");
 	Appender appender(state->conn, "t1");

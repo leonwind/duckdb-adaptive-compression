@@ -62,7 +62,7 @@ FINISH_BENCHMARK(SuccinctZipfDistribution)
 
 DUCKDB_BENCHMARK(NonSuccinctZipfDistribution, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
-	state->db.instance->GetBufferManager().DisableSuccinct();
+	state->db.instance->config.succinct_enabled = false;
 
 	state->conn.Query("CREATE TABLE t1(i UINTEGER);");
 	Appender appender(state->conn, "t1");

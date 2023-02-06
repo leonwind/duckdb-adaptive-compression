@@ -48,12 +48,13 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 	//std::cout << "Create transient segment with size " << segment_size << std::endl;
 
 	if (TypeIsInteger(type.InternalType()) && config.succinct_enabled) {
-		//std::cout << "Create SUCCINCT transient segment" << std::endl;
+		//std::cout << "Create SUCCINCT transient segment with size "<< segment_size << std::endl;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
 		block = buffer_manager.RegisterSmallMemory(0);
 	} else {
-		//std::cout << "Create UNCOMPRESSED transient segment" << std::endl;
+		//std::cout << "Create UNCOMPRESSED transient segment with size "<< segment_size << std::endl;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_UNCOMPRESSED, type.InternalType());
+		//std::cout << "Uncompressed type: " << TypeIdToString(type.InternalType()) << std::endl;
 		// transient: allocate a buffer for the uncompressed segment
 		if (segment_size < Storage::BLOCK_SIZE) {
 			block = buffer_manager.RegisterSmallMemory(segment_size);
@@ -78,7 +79,7 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
                              idx_t segment_size_p)
     : SegmentBase(start, count), db(db), type(move(type_p)), type_size(GetTypeIdSize(type.InternalType())),
       segment_type(segment_type), function(function_p), stats(type, move(statistics)), block(move(block)),
-      block_id(block_id_p), offset(offset_p), segment_size(segment_size_p) {
+      block_id(block_id_p), offset(offset_p), segment_size(segment_size_p), num_elements(0) {
 	D_ASSERT(function);
 
 	//std::cout << "Current data type: " << TypeIdToString(type.InternalType()) << std::endl;
@@ -86,6 +87,7 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		succinct_vec.width(type_size * 8);
 		succinct_vec.resize(segment_size / type_size);
+		//std::cout << "Size in bytes: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
 		BufferManager::GetBufferManager(db).AddToDataSize(sdsl::size_in_bytes(succinct_vec));
 	}
 
@@ -100,8 +102,8 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
 ColumnSegment::ColumnSegment(ColumnSegment &other, idx_t start)
     : SegmentBase(start, other.count), db(other.db), type(move(other.type)), type_size(other.type_size),
       segment_type(other.segment_type), function(other.function), stats(move(other.stats)), block(move(other.block)),
-      block_id(other.block_id), offset(other.offset), segment_size(other.segment_size),
-      segment_state(move(other.segment_state)) {
+      block_id(other.block_id), offset(other.offset), segment_size(other.segment_size), num_elements(other.num_elements),
+      segment_state(move(other.segment_state)), compacted(other.compacted) {
 	succinct_vec = std::move(other.succinct_vec);
 }
 
@@ -191,10 +193,21 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 	if (!function->append) {
 		throw InternalException("Attempting to append to a segment without append method");
 	}
+
 	//std::cout << "Insert " << count << " of " << segment_size / type_size << std::endl;
 	idx_t copy_count = function->append(*state.append_state, *this, stats, append_data, offset, count);
+	num_elements += count;
+
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
-		if (count == segment_size / type_size) {
+		/*
+		std::cout << "Inserted " << count
+		          << ", total: " << num_elements << "/" << succinct_vec.size()
+		          << ", size: " << segment_size
+		          << std::endl;
+		std::cout << "Stats: " << stats.statistics->ToString() << std::endl;
+		 */
+
+		if (num_elements >= succinct_vec.size()) {
 			Compact();
 		}
 	}
@@ -206,7 +219,10 @@ void ColumnSegment::Compact() {
 		return;
 	}
 	size_t size_before_compress = sdsl::size_in_bytes(succinct_vec);
-
+	/*
+	std::cout << "Total elements: "
+	          << num_elements << "/" << segment_size / type_size << std::endl;
+	*/
 	if (DBConfig::GetConfig(db).succinct_extract_prefix_enabled) {
 		ExtractCommonMinFactor();
 	}

@@ -144,6 +144,8 @@ private:
 	void Compact();
 
 private:
+	idx_t num_elements;
+
 	//! The block id that this segment relates to (persistent segment only)
 	block_id_t block_id;
 	//! The offset into the block (persistent segment only)

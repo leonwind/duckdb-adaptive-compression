@@ -10,6 +10,8 @@
 #include "duckdb/storage/table/column_data_checkpointer.hpp"
 #include "duckdb/storage/table/column_segment.hpp"
 
+#include <iostream>
+
 namespace duckdb {
 
 //===--------------------------------------------------------------------===//

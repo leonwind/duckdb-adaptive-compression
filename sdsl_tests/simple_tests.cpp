@@ -117,13 +117,12 @@ void test10() {
 void test11() {
 	int_vector<> v(100);
 	v.width(16);
-	for (size_t i = 0; i < 100; ++i) {
+	for (size_t i = 0; i < 300; ++i) {
 		v[i] = i;
 	}
 	std::cout << "Width: " << (unsigned) v.width() << std::endl;
 	util::bit_compress(v);
 	std::cout << "New width: " << (unsigned) v.width() << std::endl;
-
 	size_t num_lookups = 1000000000;
 
 	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -137,7 +136,7 @@ void test11() {
 	          << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
 	          << "[ms]" << std::endl;
 
-	util::expand_width(v, 8);
+	util::expand_width(v, 16);
 	std::cout << "Expanded width: " << (unsigned) v.width() << std::endl;
 
 	begin = std::chrono::steady_clock::now();

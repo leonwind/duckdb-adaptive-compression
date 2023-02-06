@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sdsl/vectors.hpp>
+#include <chrono>
 
 using namespace std;
 using namespace sdsl;
@@ -113,6 +114,45 @@ void test10() {
 	std::cout << v[0] << std::endl;
 }
 
+void test11() {
+	int_vector<> v(100);
+	v.width(16);
+	for (size_t i = 0; i < 100; ++i) {
+		v[i] = i;
+	}
+	std::cout << "Width: " << (unsigned) v.width() << std::endl;
+	util::bit_compress(v);
+	std::cout << "New width: " << (unsigned) v.width() << std::endl;
+
+	size_t num_lookups = 1000000000;
+
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+	size_t sum = 0;
+	for (size_t i = 0; i < num_lookups; i++) {
+		sum += v[i % 100];
+	}
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	std::cout << "Sum is: " << sum << std::endl;
+	std::cout << "Elapsed time: "
+	          << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
+	          << "[ms]" << std::endl;
+
+	util::expand_width(v, 8);
+	std::cout << "Expanded width: " << (unsigned) v.width() << std::endl;
+
+	begin = std::chrono::steady_clock::now();
+	sum = 0;
+	for (size_t i = 0; i < num_lookups; i++) {
+		sum += v[i % 100];
+	}
+	end = std::chrono::steady_clock::now();
+	std::cout << "Sum is: " << sum << std::endl;
+	std::cout << "Elapsed time: "
+	          << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
+	          << "[ms]" << std::endl;
+	std::cout << "Sum is: " << sum << std::endl;
+}
+
 int main(){
 	//test1();
 	//test2();
@@ -123,5 +163,6 @@ int main(){
 	//test7();
 	//test8();
 	//test9();
-	test10();
+	//test10();
+	test11();
 }

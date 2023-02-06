@@ -3,6 +3,7 @@
 #include "duckdb/common/profiler.hpp"
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/common/string_util.hpp"
+#include "duckdb/storage/buffer_manager.hpp"
 #include "duckdb.hpp"
 #include "duckdb_benchmark.hpp"
 #include "interpreted_benchmark.hpp"
@@ -14,6 +15,7 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
+#include <iostream>
 
 using namespace duckdb;
 
@@ -82,8 +84,12 @@ void BenchmarkRunner::LogLine(string message) {
 	fprintf(stderr, "%s\n", message.c_str());
 }
 
-void BenchmarkRunner::LogResult(string message) {
-	LogLine(message);
+void BenchmarkRunner::LogResult(string message, bool log_line) {
+	if (log_line) {
+		LogLine(message);
+	} else {
+		Log(message);
+	}
 	if (out_file.good()) {
 		out_file << message << endl;
 		out_file.flush();
@@ -97,7 +103,69 @@ void BenchmarkRunner::LogOutput(string message) {
 	}
 }
 
+void BenchmarkRunner::RunSuccinctBenchmark(Benchmark *benchmark) {
+	Profiler profiler;
+	// Run succinct benchmark and also log memory allocation in bytes.
+	auto state = benchmark->Initialize(configuration);
+	auto nruns = benchmark->NRuns();
+
+	size_t initial_memory_usage =
+	    ((DuckDBBenchmarkState*) state.get())->db.instance->GetBufferManager().GetDataSize();
+
+	for (size_t i = 0; i < nruns + 1; i++) {
+		bool hotrun = i > 0;
+		if (hotrun) {
+			Log(StringUtil::Format("%s\t%d\t", benchmark->name, i));
+		}
+		if (hotrun && benchmark->RequireReinit()) {
+			state = benchmark->Initialize(configuration);
+		}
+		is_active = true;
+		timeout = false;
+		std::thread interrupt_thread(sleep_thread, benchmark, state.get(), benchmark->Timeout());
+
+		profiler.Start();
+		benchmark->Run(state.get());
+		profiler.End();
+
+		is_active = false;
+		interrupt_thread.join();
+		if (hotrun) {
+			LogOutput(benchmark->GetLogOutput(state.get()));
+			if (timeout) {
+				// write timeout
+				LogResult("TIMEOUT");
+				break;
+			} else {
+				// write time
+				auto verify = benchmark->Verify(state.get());
+				if (!verify.empty()) {
+					LogResult("INCORRECT", /* log_line= */ false);
+					LogLine("INCORRECT RESULT: " + verify);
+					LogOutput("INCORRECT RESULT: " + verify);
+					break;
+				} else {
+					Log(StringUtil::Format("%s\t", std::to_string(profiler.Elapsed())));
+				}
+			}
+			Log(StringUtil::Format("%s\t\t", std::to_string(initial_memory_usage)));
+
+			size_t used_mem_after_query =
+			    ((DuckDBBenchmarkState*) state.get())->db.instance->GetBufferManager().GetUsedMemory();
+			LogLine(std::to_string(used_mem_after_query));
+		}
+		benchmark->Cleanup(state.get());
+	}
+
+	benchmark->Finalize();
+}
+
+
 void BenchmarkRunner::RunBenchmark(Benchmark *benchmark) {
+	if (benchmark->group == "[succinct]") {
+		return RunSuccinctBenchmark(benchmark);
+	}
+
 	Profiler profiler;
 	auto display_name = benchmark->DisplayName();
 
@@ -279,7 +347,7 @@ ConfigurationError run_benchmarks() {
 				fprintf(stdout, "%s\n", query.c_str());
 			}
 		} else {
-			instance.LogLine("name\trun\ttiming");
+			//instance.LogLine("name\trun\ttiming");
 			for (const auto &benchmark_index : benchmark_indices) {
 				instance.RunBenchmark(benchmarks[benchmark_index]);
 			}

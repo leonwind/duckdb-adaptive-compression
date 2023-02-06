@@ -137,7 +137,7 @@ void test11() {
 	          << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count()
 	          << "[ms]" << std::endl;
 
-	util::expand_width(v, 9);
+	util::expand_width(v, 8);
 	std::cout << "Expanded width: " << (unsigned) v.width() << std::endl;
 
 	begin = std::chrono::steady_clock::now();

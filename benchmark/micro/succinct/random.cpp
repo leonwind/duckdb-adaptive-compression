@@ -21,19 +21,12 @@ void Load(DuckDBBenchmarkState *state) override {
 		appender.Append<uint32_t>(rand() % NUM_INSERTS);
 		appender.EndRow();
 	}
-
-	std::cout << "Used after insert memory: "
-	          << state->db.instance->GetBufferManager().GetUsedMemory()
-	          << std::endl;
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("BEGIN TRANSACTION");
 	state->result = state->conn.Query("SELECT * FROM t1");
 	state->conn.Query("COMMIT");
-	std::cout << "Used memory: "
-	          << state->db.instance->GetBufferManager().GetUsedMemory()
-	          << std::endl;
 }
 
 string VerifyResult(QueryResult *result) override {
@@ -61,19 +54,12 @@ void Load(DuckDBBenchmarkState *state) override {
 		appender.Append<uint32_t>(random() % NUM_INSERTS);
 		appender.EndRow();
 	}
-
-	std::cout << "Used after insert memory: "
-	          << state->db.instance->GetBufferManager().GetUsedMemory()
-	          << std::endl;
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("BEGIN TRANSACTION");
 	state->result = state->conn.Query("SELECT * FROM t1");
 	state->conn.Query("COMMIT");
-	std::cout << "Used memory: "
-	          << state->db.instance->GetBufferManager().GetUsedMemory()
-	          << std::endl;
 }
 
 string VerifyResult(QueryResult *result) override {

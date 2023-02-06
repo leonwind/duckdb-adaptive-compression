@@ -84,18 +84,9 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
 	//std::cout << "Current data type: " << TypeIdToString(type.InternalType()) << std::endl;
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
-		//std::cout << "Function type is succinct" << std::endl;
-
-		//sdsl::int_vector<> tmp_v(segment_size / type_size);
 		succinct_vec.width(type_size * 8);
 		succinct_vec.resize(segment_size / type_size);
-		//std::cout << "Succinct vec size: " << succinct_vec.size() << ", width: " << (unsigned) succinct_vec.width() << std::endl;
-		//sdsl::util::expand_width(succinct_vec, type_size * 8);
-		//std::cout << "Vec element width " << (size_t) succinct_vec.width() << std::endl;
-
-		//std::cout << "Constructor size: " << succinct_vec.size() << std::endl;
-	} else {
-		//std::cout << "Function type is NOT succinct" << std::endl;
+		BufferManager::GetBufferManager(db).AddToDataSize(sdsl::size_in_bytes(succinct_vec));
 	}
 
 	min_factor = UINT64_MAX;
@@ -145,8 +136,6 @@ void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &resul
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		Compact();
 		//std::cout << "Before scan size: " << succinct_vec.size() << std::endl;
-	} else {
-		//std::cout << "Scan non succinct" << std::endl;
 	}
 	function->scan_vector(*this, state, scan_count, result);
 }
@@ -155,8 +144,6 @@ void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		Compact();
 		//std::cout << "Before partial scan size: " << succinct_vec.size() << std::endl;
-	} else {
-		//std::cout << "Partial Scan non succinct" << std::endl;
 	}
 	function->scan_partial(*this, state, scan_count, result, result_offset);
 }
@@ -218,17 +205,7 @@ void ColumnSegment::Compact() {
 	if (compacted || function->type != CompressionType::COMPRESSION_SUCCINCT) {
 		return;
 	}
-
-	/*
-	std::cout << "Length: " << succinct_vec.size()
-			  << ", width: " << (unsigned) succinct_vec.width()
-			  << ", count: " << count
-			  << ", segment_size: " << segment_size
-			  << std::endl;
-	std::cout << "Size before: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
-	std::cout << "Common min factor " << min_factor << std::endl;
-	std::cout << "Size after: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
-	 */
+	size_t size_before_compress = sdsl::size_in_bytes(succinct_vec);
 
 	if (DBConfig::GetConfig(db).succinct_extract_prefix_enabled) {
 		ExtractCommonMinFactor();
@@ -239,12 +216,15 @@ void ColumnSegment::Compact() {
 		idx_t min_width = succinct_vec.width();
 		idx_t new_padded_width = ((min_width + 7) & (-8));
 		sdsl::util::expand_width(succinct_vec, new_padded_width);
-		//std::cout << "Curr width: " << min_width << ", padded to: " << new_padded_width << std::endl;
 	}
 
 	compacted = true;
+	int64_t diff_size = size_before_compress - sdsl::size_in_bytes(succinct_vec);
+	//std::cout << "Data size before: " << BufferManager::GetBufferManager(db).GetDataSize() << std::endl;
 
-	BufferManager::GetBufferManager(db).AddToDataSize(sdsl::size_in_bytes(succinct_vec));
+	BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
+	//std::cout << "Saved bytes through compacting: " << diff_size << std::endl;
+	//std::cout << "Data size after: " << BufferManager::GetBufferManager(db).GetDataSize() << std::endl;
 }
 
 

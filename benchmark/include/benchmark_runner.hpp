@@ -40,7 +40,7 @@ public:
 
 	void Log(string message);
 	void LogLine(string message);
-	void LogResult(string message);
+	void LogResult(string message, bool log_line = true);
 	void LogOutput(string message);
 
 	void RunBenchmark(Benchmark *benchmark);
@@ -50,6 +50,9 @@ public:
 	ofstream out_file;
 	ofstream log_file;
 	uint32_t threads = std::thread::hardware_concurrency();
+
+private:
+	void RunSuccinctBenchmark(Benchmark *benchmark);
 };
 
 } // namespace duckdb

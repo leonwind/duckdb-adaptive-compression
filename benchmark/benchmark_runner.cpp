@@ -148,7 +148,7 @@ void BenchmarkRunner::RunSuccinctBenchmark(Benchmark *benchmark) {
 					Log(StringUtil::Format("%s\t", std::to_string(profiler.Elapsed())));
 				}
 			}
-			Log(StringUtil::Format("%s\t\t", std::to_string(initial_memory_usage)));
+			Log(StringUtil::Format("%s\t", std::to_string(initial_memory_usage)));
 
 			size_t used_mem_after_query =
 			    ((DuckDBBenchmarkState*) state.get())->db.instance->GetBufferManager().GetUsedMemory();

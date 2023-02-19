@@ -21,19 +21,23 @@ void Load(DuckDBBenchmarkState *state) override {
 		appender.Append<uint32_t>(i);
 		appender.EndRow();
 	}
-}
+	appender.Close();
 
-void RunBenchmark(DuckDBBenchmarkState *state) override {
 	std::random_device rd{};
     std::mt19937 gen{rd()};
 	std::normal_distribution<> normal{
 	    /* mean= */ std::round(NUM_INSERTS / 2),
 	    /* stddev= */ std::round(NUM_INSERTS) / 4};
+	for (int i = 0; i < NUM_LOOKUPS; ++i) {
+		state->data.push_back(uint32_t(std::round(normal(gen))));
+	}
+}
 
+void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("BEGIN TRANSACTION");
 	for (int i = 0; i < NUM_LOOKUPS; i++) {
 		auto query_string = "SELECT i FROM t1 where i == " +
-		                    to_string(std::round(normal(gen)));
+		                    to_string(state->data[i]);
 		state->conn.Query(query_string);
 	}
 	state->conn.Query("COMMIT");
@@ -63,20 +67,24 @@ void Load(DuckDBBenchmarkState *state) override {
 		appender.Append<uint32_t>(i);
 		appender.EndRow();
 	}
-}
+	appender.Close();
 
-void RunBenchmark(DuckDBBenchmarkState *state) override {
 	std::random_device rd{};
     std::mt19937 gen{rd()};
 	std::normal_distribution<> normal{
 	    /* mean= */ std::round(NUM_INSERTS / 2),
 	    /* stddev= */ std::round(NUM_INSERTS) / 4};
+	for (int i = 0; i < NUM_LOOKUPS; ++i) {
+		state->data.push_back(uint32_t(std::round(normal(gen))));
+	}
+}
 
+void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("BEGIN TRANSACTION");
 
 	for (int i = 0; i < NUM_LOOKUPS; i++) {
 		auto query_string = "SELECT i FROM t1 where i == " +
-		                    to_string(std::round(normal(gen)));
+		                    to_string(state->data[i]);
 		state->conn.Query(query_string);
 	}
 	state->conn.Query("COMMIT");
@@ -106,18 +114,22 @@ void Load(DuckDBBenchmarkState *state) override {
 		appender.Append<uint32_t>(i);
 		appender.EndRow();
 	}
-}
+	appender.Close();
 
-void RunBenchmark(DuckDBBenchmarkState *state) override {
 	std::random_device rd{};
     std::mt19937 gen{rd()};
 	std::normal_distribution<> normal{
 	    /* mean= */ std::round(NUM_INSERTS / 2),
 	    /* stddev= */ std::round(NUM_INSERTS) / 4};
+	for (int i = 0; i < NUM_LOOKUPS; ++i) {
+		state->data.push_back(uint32_t(std::round(normal(gen))));
+	}
+}
 
+void RunBenchmark(DuckDBBenchmarkState *state) override {
 	for (int i = 0; i < NUM_LOOKUPS; i++) {
 		auto query_string = "SELECT i FROM t1 where i == " +
-		                    to_string(std::round(normal(gen)));
+		                    to_string(state->data[i]);
 		state->conn.Query("BEGIN TRANSACTION");
 		state->conn.Query(query_string);
 		state->conn.Query("COMMIT");

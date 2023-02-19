@@ -23,6 +23,7 @@ struct DuckDBBenchmarkState : public BenchmarkState {
 	DuckDB db;
 	Connection conn;
 	unique_ptr<QueryResult> result;
+	vector<uint32_t> data;
 
 	DuckDBBenchmarkState(string path) : db(path.empty() ? nullptr : path.c_str()), conn(db) {
 		auto &instance = BenchmarkRunner::GetInstance();

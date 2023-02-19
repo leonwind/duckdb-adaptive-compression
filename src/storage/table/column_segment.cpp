@@ -1,19 +1,21 @@
 #include "duckdb/storage/table/column_segment.hpp"
+
 #include "duckdb/common/limits.hpp"
-#include "duckdb/storage/table/update_segment.hpp"
 #include "duckdb/common/types/null_value.hpp"
 #include "duckdb/common/types/vector.hpp"
 #include "duckdb/common/vector_operations/vector_operations.hpp"
-#include "duckdb/storage/table/append_state.hpp"
-#include "duckdb/storage/storage_manager.hpp"
+#include "duckdb/main/config.hpp"
 #include "duckdb/planner/filter/conjunction_filter.hpp"
 #include "duckdb/planner/filter/constant_filter.hpp"
 #include "duckdb/planner/filter/null_filter.hpp"
-#include "duckdb/main/config.hpp"
+#include "duckdb/storage/statistics/numeric_statistics.hpp"
+#include "duckdb/storage/storage_manager.hpp"
+#include "duckdb/storage/table/append_state.hpp"
+#include "duckdb/storage/table/update_segment.hpp"
 
+#include <algorithm>
 #include <cstring>
 #include <utility>
-#include <algorithm>
 
 namespace duckdb {
 
@@ -92,6 +94,7 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
 	}
 
 	min_factor = UINT64_MAX;
+	max_factor = 0; /* Store as uint so smallest element is 0. */
 	compacted = false;
 
 	if (function->init_segment) {
@@ -135,18 +138,22 @@ void ColumnSegment::Skip(ColumnScanState &state) {
 }
 
 void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &result) {
+	/*
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		Compact();
 		//std::cout << "Before scan size: " << succinct_vec.size() << std::endl;
 	}
+	*/
 	function->scan_vector(*this, state, scan_count, result);
 }
 
 void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset) {
+	/*
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		Compact();
 		//std::cout << "Before partial scan size: " << succinct_vec.size() << std::endl;
 	}
+	 */
 	function->scan_partial(*this, state, scan_count, result, result_offset);
 }
 
@@ -224,10 +231,12 @@ void ColumnSegment::Compact() {
 	          << num_elements << "/" << segment_size / type_size << std::endl;
 	*/
 	if (DBConfig::GetConfig(db).succinct_extract_prefix_enabled) {
-		ExtractCommonMinFactor();
+		//ExtractCommonMinFactor();
 	}
 
-	sdsl::util::bit_compress(succinct_vec);
+	//sdsl::util::bit_compress(succinct_vec);
+	BitCompress();
+
 	if (DBConfig::GetConfig(db).succinct_padded_to_next_byte_enabled) {
 		idx_t min_width = succinct_vec.width();
 		idx_t new_padded_width = ((min_width + 7) & (-8));
@@ -245,14 +254,45 @@ void ColumnSegment::Compact() {
 
 
 void ColumnSegment::ExtractCommonMinFactor() {
+	/*
 	for (idx_t i = 0; i < count; ++i) {
 		uint64_t curr = succinct_vec[i];
 		min_factor = std::min(min_factor, curr);
+	}
+	 */
+	if (min_factor == UINT64_MAX) {
+		// Haven't updated it.
+		return;
 	}
 
 	for (idx_t i = 0; i < count; ++i) {
 		succinct_vec[i] -= min_factor;
 	}
+}
+
+void ColumnSegment::BitCompress() {
+	auto &num_stats = (const NumericStatistics &) stats;
+	auto max_elem = std::max_element(succinct_vec.begin(), succinct_vec.end());
+	std::cout << *max_elem << ", " << max_factor << std::endl;
+    uint64_t max = 0;
+    if (max_elem != succinct_vec.end()) {
+        max = *max_elem;
+    }
+
+    uint8_t min_width = sdsl::bits::hi(max)+1;
+    uint8_t old_width = succinct_vec.width();
+    if (old_width > min_width) {
+        const uint64_t* read_data = succinct_vec.data();
+        uint64_t* write_data = succinct_vec.data();
+        uint8_t read_offset = 0;
+        uint8_t write_offset = 0;
+        for (size_t i=0; i < succinct_vec.size(); ++i) {
+            uint64_t x = sdsl::bits::read_int_and_move(read_data, read_offset, old_width);
+            sdsl::bits::write_int_and_move(write_data, x, write_offset, min_width);
+        }
+        succinct_vec.bit_resize(succinct_vec.size() * min_width);
+        succinct_vec.width(min_width);
+    }
 }
 
 idx_t ColumnSegment::FinalizeAppend(ColumnAppendState &state) {

@@ -129,6 +129,26 @@ public:
 		return min_factor;
 	}
 
+	uint64_t GetMax() {
+		return max_factor;
+	}
+
+	void UpdateMinFactor(uint64_t new_min) {
+		min_factor = std::min(min_factor, new_min);
+	}
+
+	void UpdateMaxFactor(uint64_t new_max) {
+		max_factor = std::max(max_factor, new_max);
+	}
+
+	bool IsBitCompressed() {
+		return compacted;
+	}
+
+	void SetBitCompressed(bool compressed) {
+		compacted = compressed;
+	}
+
 public:
 	ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block, LogicalType type, ColumnSegmentType segment_type,
 	              idx_t start, idx_t count, CompressionFunction *function, unique_ptr<BaseStatistics> statistics,
@@ -141,6 +161,7 @@ private:
 	void ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset);
 
 	void ExtractCommonMinFactor();
+	void BitCompress();
 	void Compact();
 
 private:
@@ -156,7 +177,9 @@ private:
 	unique_ptr<CompressedSegmentState> segment_state;
 	//! Common min factor of all elements in this segment
 	uint64_t min_factor;
-	//!
+	//! Max number in this segment.
+	uint64_t max_factor;
+	//! If the succinct vector is bit compressed.
 	bool compacted;
 };
 

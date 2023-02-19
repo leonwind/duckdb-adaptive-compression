@@ -9,6 +9,7 @@
 using namespace duckdb;
 
 #define NUM_INSERTS 1000000
+#define NUM_LOOKUPS 1
 
 DUCKDB_BENCHMARK(SuccinctSequentialInsert, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
@@ -20,11 +21,14 @@ void Load(DuckDBBenchmarkState *state) override {
 		appender.Append<int32_t>(i);
 		appender.EndRow();
 	}
+	appender.Close();
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("BEGIN TRANSACTION");
-	state->result = state->conn.Query("SELECT * FROM t1");
+	for (size_t i = 0; i < NUM_LOOKUPS; ++i) {
+		state->result = state->conn.Query("SELECT * FROM t1");
+	}
 	state->conn.Query("COMMIT");
 }
 
@@ -52,11 +56,14 @@ void Load(DuckDBBenchmarkState *state) override {
 		appender.Append<int32_t>(i);
 		appender.EndRow();
 	}
+	appender.Close();
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("BEGIN TRANSACTION");
-	state->result = state->conn.Query("SELECT * FROM t1");
+	for (size_t i = 0; i < NUM_LOOKUPS; ++i) {
+		state->result = state->conn.Query("SELECT * FROM t1");
+	}
 	state->conn.Query("COMMIT");
 }
 
@@ -84,11 +91,14 @@ void Load(DuckDBBenchmarkState *state) override {
 		appender.Append<int32_t>(i);
 		appender.EndRow();
 	}
+	appender.Close();
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("BEGIN TRANSACTION");
-	state->result = state->conn.Query("SELECT * FROM t1");
+	for (size_t i = 0; i < NUM_LOOKUPS; ++i) {
+		state->result = state->conn.Query("SELECT * FROM t1");
+	}
 	state->conn.Query("COMMIT");
 }
 

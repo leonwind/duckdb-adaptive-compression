@@ -88,7 +88,6 @@ unique_ptr<CompressionState> UncompressedFunctions::InitCompression(ColumnDataCh
 }
 
 void UncompressedFunctions::Compress(CompressionState &state_p, Vector &data, idx_t count) {
-	std::cout << "Compress non succinct" << std::endl;
 	auto &state = (UncompressedCompressState &)state_p;
 	UnifiedVectorFormat vdata;
 	data.ToUnifiedFormat(count, vdata);

@@ -333,8 +333,6 @@ void ColumnSegment::ConvertToPersistent(BlockManager *block_manager, block_id_t 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		return;
 	}
-	std::cout << "Convert to persistent" << std::endl;
-	std::cout << "Compress type: " << CompressionTypeToString(function->type) << std::endl;
 	segment_type = ColumnSegmentType::PERSISTENT;
 
 	block_id = block_id_p;
@@ -361,7 +359,6 @@ void ColumnSegment::ConvertToPersistent(BlockManager *block_manager, block_id_t 
 
 void ColumnSegment::MarkAsPersistent(shared_ptr<BlockHandle> block_p, uint32_t offset_p) {
 	D_ASSERT(segment_type == ColumnSegmentType::TRANSIENT);
-	std::cout << "Mark as persistent" << std::endl;
 	segment_type = ColumnSegmentType::PERSISTENT;
 
 	block_id = block_p->BlockId();

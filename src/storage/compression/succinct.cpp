@@ -129,17 +129,10 @@ void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t s
 	data_ptr_t target_ptr = FlatVector::GetData(result) + result_offset * sizeof(T);
 
 	for (idx_t i = 0; i < scan_count; ++i) {
-		//std::cout << "target ptr idx: " << i * sizeof(T) << ", source idx: " << start + i << std::endl;
-
 		auto entry_at_i = uint64_t(source[start + i]);
 		if (segment.GetCommonMinFactor() != UINT64_MAX) {
 			entry_at_i += segment.GetCommonMinFactor();
 		}
-		// target_ptr is always an uint8_t ptr.
-		// The succinct vector however can be up to 64 bit.
-		// Since we can only load 8 bit at once into the target,
-		// we need to do it succinct.width() / 8 times.
-
 
 		memcpy(target_ptr + i * sizeof(T), &entry_at_i, sizeof(T));
 	}
@@ -179,7 +172,6 @@ void SuccinctScanAndCompact(ColumnSegment &segment, ColumnScanState &state, idx_
     uint8_t min_width = sdsl::bits::hi(max)+1;
 	if (DBConfig::GetConfig(segment.db).succinct_padded_to_next_byte_enabled) {
 		min_width = ((min_width + 7) & (-8));
-		//std::cout << "Padded min width: " << (unsigned) min_width << std::endl;
 	}
 
     uint8_t old_width = segment.succinct_vec.width();
@@ -261,8 +253,6 @@ static unique_ptr<CompressionAppendState> SuccinctInitAppend(ColumnSegment &segm
 template <class T>
 void SuccinctAppendLoop(SegmentStatistics &stats, sdsl::int_vector<> &target, idx_t target_offset, UnifiedVectorFormat &adata,
                        idx_t offset, idx_t count, PhysicalType type) {
-
-
 	auto sdata = (T *)adata.data;
 	//std::cout << "target offset " << target_offset << ", count " << count << std::endl;
 	//std::cout << "Succinct size " << target.size() << std::endl;

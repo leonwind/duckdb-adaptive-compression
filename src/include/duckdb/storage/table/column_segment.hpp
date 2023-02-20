@@ -133,8 +133,8 @@ public:
 		return max_factor;
 	}
 
-	void UpdateMinFactor(uint64_t new_min) {
-		min_factor = std::min(min_factor, new_min);
+	void SetMinFactor(uint64_t new_min) {
+		min_factor = new_min;
 	}
 
 	void UpdateMaxFactor(uint64_t new_max) {
@@ -145,8 +145,8 @@ public:
 		return compacted;
 	}
 
-	void SetBitCompressed(bool compressed) {
-		compacted = compressed;
+	void SetBitCompressed() {
+		compacted = true;
 	}
 
 public:

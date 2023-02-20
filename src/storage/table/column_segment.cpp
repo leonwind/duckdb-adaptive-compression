@@ -148,12 +148,10 @@ void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &resul
 }
 
 void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset) {
-	/*
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		Compact();
 		//std::cout << "Before partial scan size: " << succinct_vec.size() << std::endl;
 	}
-	 */
 	function->scan_partial(*this, state, scan_count, result, result_offset);
 }
 
@@ -225,33 +223,17 @@ void ColumnSegment::Compact() {
 	if (compacted || function->type != CompressionType::COMPRESSION_SUCCINCT) {
 		return;
 	}
+
 	size_t size_before_compress = sdsl::size_in_bytes(succinct_vec);
-	/*
-	std::cout << "Total elements: "
-	          << num_elements << "/" << segment_size / type_size << std::endl;
-	*/
-	if (DBConfig::GetConfig(db).succinct_extract_prefix_enabled) {
-		//ExtractCommonMinFactor();
-	}
 
-	//sdsl::util::bit_compress(succinct_vec);
 	BitCompress();
+	SetBitCompressed();
 
-	if (DBConfig::GetConfig(db).succinct_padded_to_next_byte_enabled) {
-		idx_t min_width = succinct_vec.width();
-		idx_t new_padded_width = ((min_width + 7) & (-8));
-		sdsl::util::expand_width(succinct_vec, new_padded_width);
-	}
-
-	compacted = true;
 	int64_t diff_size = size_before_compress - sdsl::size_in_bytes(succinct_vec);
-	//std::cout << "Data size before: " << BufferManager::GetBufferManager(db).GetDataSize() << std::endl;
-
 	BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
 	//std::cout << "Saved bytes through compacting: " << diff_size << std::endl;
 	//std::cout << "Data size after: " << BufferManager::GetBufferManager(db).GetDataSize() << std::endl;
 }
-
 
 void ColumnSegment::ExtractCommonMinFactor() {
 	/*
@@ -265,32 +247,61 @@ void ColumnSegment::ExtractCommonMinFactor() {
 		return;
 	}
 
-	for (idx_t i = 0; i < count; ++i) {
+	for (idx_t i = 0; i < count; ++i){
 		succinct_vec[i] -= min_factor;
 	}
 }
 
 void ColumnSegment::BitCompress() {
-	auto &num_stats = (const NumericStatistics &) stats;
-	auto max_elem = std::max_element(succinct_vec.begin(), succinct_vec.end());
-	std::cout << *max_elem << ", " << max_factor << std::endl;
-    uint64_t max = 0;
-    if (max_elem != succinct_vec.end()) {
-        max = *max_elem;
-    }
+	uint64_t min = UINT64_MAX;
+	uint64_t max = 0;
+
+	if (DBConfig::GetConfig(db).succinct_extract_prefix_enabled) {
+		auto min_max = std::minmax_element(succinct_vec.begin(), succinct_vec.begin() + count);
+
+		if (min_max.first != succinct_vec.end()) {
+			min = *min_max.first;
+			SetMinFactor(min);
+		}
+
+    	if (min_max.second != succinct_vec.end()) {
+        	max = *min_max.second;
+    	}
+
+		if (min != UINT64_MAX) {
+			// Decrease max by common min factor
+			max -= min;
+		}
+	} else {
+		auto max_elem = std::max_element(succinct_vec.begin(), succinct_vec.begin() + count);
+		if (max_elem != succinct_vec.end()) {
+        	max = *max_elem;
+    	}
+	}
 
     uint8_t min_width = sdsl::bits::hi(max)+1;
+	if (DBConfig::GetConfig(db).succinct_padded_to_next_byte_enabled) {
+		min_width = ((min_width + 7) & (-8));
+		//std::cout << "Padded min width: " << (unsigned) min_width << std::endl;
+	}
+
     uint8_t old_width = succinct_vec.width();
+
     if (old_width > min_width) {
         const uint64_t* read_data = succinct_vec.data();
         uint64_t* write_data = succinct_vec.data();
         uint8_t read_offset = 0;
         uint8_t write_offset = 0;
-        for (size_t i=0; i < succinct_vec.size(); ++i) {
+
+        for (size_t i = 0; i < count; ++i) {
             uint64_t x = sdsl::bits::read_int_and_move(read_data, read_offset, old_width);
+			if (min != UINT64_MAX) {
+				x -= min;
+			}
             sdsl::bits::write_int_and_move(write_data, x, write_offset, min_width);
         }
-        succinct_vec.bit_resize(succinct_vec.size() * min_width);
+
+        succinct_vec.bit_resize(count * min_width);
         succinct_vec.width(min_width);
     }
 }

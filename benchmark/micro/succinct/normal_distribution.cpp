@@ -81,7 +81,6 @@ void Load(DuckDBBenchmarkState *state) override {
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
 	state->conn.Query("BEGIN TRANSACTION");
-
 	for (int i = 0; i < NUM_LOOKUPS; i++) {
 		auto query_string = "SELECT i FROM t1 where i == " +
 		                    to_string(state->data[i]);
@@ -127,13 +126,13 @@ void Load(DuckDBBenchmarkState *state) override {
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
+	state->conn.Query("BEGIN TRANSACTION");
 	for (int i = 0; i < NUM_LOOKUPS; i++) {
 		auto query_string = "SELECT i FROM t1 where i == " +
 		                    to_string(state->data[i]);
-		state->conn.Query("BEGIN TRANSACTION");
 		state->conn.Query(query_string);
-		state->conn.Query("COMMIT");
 	}
+	state->conn.Query("COMMIT");
 }
 
 string VerifyResult(QueryResult *result) override {

@@ -125,7 +125,7 @@ public:
 		return segment_state.get();
 	}
 
-	uint64_t GetCommonMinFactor() {
+	uint64_t GetMinFactor() {
 		return min_factor;
 	}
 
@@ -133,12 +133,14 @@ public:
 		return max_factor;
 	}
 
-	void SetMinFactor(uint64_t new_min) {
-		min_factor = new_min;
+	void UpdateMinFactor(uint64_t new_min) {
+		min_factor = std::min(min_factor, new_min);
+		//std::cout << "Update min with " << new_min << " and store as " << min_factor << std::endl;
 	}
 
 	void UpdateMaxFactor(uint64_t new_max) {
 		max_factor = std::max(max_factor, new_max);
+		//std::cout << "Update max with " << new_max << " and store as " << max_factor << std::endl;
 	}
 
 	bool IsBitCompressed() {

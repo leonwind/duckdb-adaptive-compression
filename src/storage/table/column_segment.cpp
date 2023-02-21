@@ -47,7 +47,6 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 	CompressionFunction* function;
 	auto &buffer_manager = BufferManager::GetBufferManager(db);
 	shared_ptr<BlockHandle> block;
-	//std::cout << "Create transient segment with size " << segment_size << std::endl;
 
 	if (TypeIsInteger(type.InternalType()) && config.succinct_enabled) {
 		//std::cout << "Create SUCCINCT transient segment with size "<< segment_size << std::endl;
@@ -56,7 +55,6 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 	} else {
 		//std::cout << "Create UNCOMPRESSED transient segment with size "<< segment_size << std::endl;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_UNCOMPRESSED, type.InternalType());
-		//std::cout << "Uncompressed type: " << TypeIdToString(type.InternalType()) << std::endl;
 		// transient: allocate a buffer for the uncompressed segment
 		if (segment_size < Storage::BLOCK_SIZE) {
 			block = buffer_manager.RegisterSmallMemory(segment_size);
@@ -65,7 +63,6 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 		}
 		buffer_manager.AddOnlyToDataSize(segment_size);
 	}
-	//std::cout << "Current used memory " << buffer_manager.GetUsedMemory() << std::endl;
 
 	return make_unique<ColumnSegment>(db, move(block), type, ColumnSegmentType::TRANSIENT, start, 0, function, nullptr,
 	                                  INVALID_BLOCK, 0, segment_size);
@@ -81,21 +78,15 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
                              idx_t segment_size_p)
     : SegmentBase(start, count), db(db), type(move(type_p)), type_size(GetTypeIdSize(type.InternalType())),
       segment_type(segment_type), function(function_p), stats(type, move(statistics)), block(move(block)),
-      block_id(block_id_p), offset(offset_p), segment_size(segment_size_p), num_elements(0) {
+      block_id(block_id_p), offset(offset_p), segment_size(segment_size_p),
+      num_elements(0), min_factor(UINT64_MAX), max_factor(0), compacted(false) {
 	D_ASSERT(function);
-
-	//std::cout << "Current data type: " << TypeIdToString(type.InternalType()) << std::endl;
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		succinct_vec.width(type_size * 8);
 		succinct_vec.resize(segment_size / type_size);
-		//std::cout << "Size in bytes: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
 		BufferManager::GetBufferManager(db).AddToDataSize(sdsl::size_in_bytes(succinct_vec));
 	}
-
-	min_factor = UINT64_MAX;
-	max_factor = 0; /* Store as uint so smallest element is 0. */
-	compacted = false;
 
 	if (function->init_segment) {
 		segment_state = function->init_segment(*this, block_id);
@@ -106,7 +97,8 @@ ColumnSegment::ColumnSegment(ColumnSegment &other, idx_t start)
     : SegmentBase(start, other.count), db(other.db), type(move(other.type)), type_size(other.type_size),
       segment_type(other.segment_type), function(other.function), stats(move(other.stats)), block(move(other.block)),
       block_id(other.block_id), offset(other.offset), segment_size(other.segment_size), num_elements(other.num_elements),
-      segment_state(move(other.segment_state)), compacted(other.compacted) {
+      segment_state(move(other.segment_state)), compacted(other.compacted),
+      min_factor(other.min_factor), max_factor(other.max_factor) {
 	succinct_vec = std::move(other.succinct_vec);
 }
 
@@ -138,19 +130,15 @@ void ColumnSegment::Skip(ColumnScanState &state) {
 }
 
 void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &result) {
-	/*
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		Compact();
-		//std::cout << "Before scan size: " << succinct_vec.size() << std::endl;
 	}
-	*/
 	function->scan_vector(*this, state, scan_count, result);
 }
 
 void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset) {
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		Compact();
-		//std::cout << "Before partial scan size: " << succinct_vec.size() << std::endl;
 	}
 	function->scan_partial(*this, state, scan_count, result, result_offset);
 }
@@ -189,7 +177,6 @@ void ColumnSegment::InitializeAppend(ColumnAppendState &state) {
 	if (!function->init_append) {
 		throw InternalException("Attempting to init append to a segment without init_append method");
 	}
-	//std::cout << "Init Append size: " << succinct_vec->size() << std::endl;
 	state.append_state = function->init_append(*this);
 }
 
@@ -199,19 +186,10 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 		throw InternalException("Attempting to append to a segment without append method");
 	}
 
-	//std::cout << "Insert " << count << " of " << segment_size / type_size << std::endl;
 	idx_t copy_count = function->append(*state.append_state, *this, stats, append_data, offset, count);
 	num_elements += count;
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
-		/*
-		std::cout << "Inserted " << count
-		          << ", total: " << num_elements << "/" << succinct_vec.size()
-		          << ", size: " << segment_size
-		          << std::endl;
-		std::cout << "Stats: " << stats.statistics->ToString() << std::endl;
-		 */
-
 		if (num_elements >= succinct_vec.size()) {
 			Compact();
 		}
@@ -231,8 +209,6 @@ void ColumnSegment::Compact() {
 
 	int64_t diff_size = size_before_compress - sdsl::size_in_bytes(succinct_vec);
 	BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
-	//std::cout << "Saved bytes through compacting: " << diff_size << std::endl;
-	//std::cout << "Data size after: " << BufferManager::GetBufferManager(db).GetDataSize() << std::endl;
 }
 
 void ColumnSegment::ExtractCommonMinFactor() {
@@ -241,7 +217,6 @@ void ColumnSegment::ExtractCommonMinFactor() {
 		uint64_t curr = succinct_vec[i];
 		min_factor = std::min(min_factor, curr);
 	}
-	 */
 	if (min_factor == UINT64_MAX) {
 		// Haven't updated it.
 		return;
@@ -250,9 +225,15 @@ void ColumnSegment::ExtractCommonMinFactor() {
 	for (idx_t i = 0; i < count; ++i){
 		succinct_vec[i] -= min_factor;
 	}
+	 */
 }
 
 void ColumnSegment::BitCompress() {
+	//std::cout << "Updated min: " << GetMinFactor() << ", Updated max: " << GetMax() << std::endl;
+	uint64_t min = GetMinFactor();
+	uint64_t max = GetMax() - GetMinFactor();
+
+	/*
 	uint64_t min = UINT64_MAX;
 	uint64_t max = 0;
 
@@ -261,7 +242,7 @@ void ColumnSegment::BitCompress() {
 
 		if (min_max.first != succinct_vec.end()) {
 			min = *min_max.first;
-			SetMinFactor(min);
+			UpdateMinFactor(min);
 		}
 
     	if (min_max.second != succinct_vec.end()) {
@@ -278,13 +259,14 @@ void ColumnSegment::BitCompress() {
         	max = *max_elem;
     	}
 	}
+	 */
+	//std::cout << "Min: " << min << ", Max: " << max << std::endl;
 
-    uint8_t min_width = sdsl::bits::hi(max)+1;
+    uint8_t min_width = sdsl::bits::hi(max) + 1;
 	if (DBConfig::GetConfig(db).succinct_padded_to_next_byte_enabled) {
 		min_width = ((min_width + 7) & (-8));
 		//std::cout << "Padded min width: " << (unsigned) min_width << std::endl;
 	}
-
     uint8_t old_width = succinct_vec.width();
 
     if (old_width > min_width) {

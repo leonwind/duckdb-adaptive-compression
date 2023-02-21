@@ -130,8 +130,8 @@ void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t s
 
 	for (idx_t i = 0; i < scan_count; ++i) {
 		auto entry_at_i = uint64_t(source[start + i]);
-		if (segment.GetCommonMinFactor() != UINT64_MAX) {
-			entry_at_i += segment.GetCommonMinFactor();
+		if (segment.GetMinFactor() != UINT64_MAX) {
+			entry_at_i += segment.GetMinFactor();
 		}
 
 		memcpy(target_ptr + i * sizeof(T), &entry_at_i, sizeof(T));
@@ -141,17 +141,21 @@ void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t s
 template <class T>
 void SuccinctScanAndCompact(ColumnSegment &segment, ColumnScanState &state, idx_t scan_count, Vector &result,
                          idx_t result_offset) {
+	// TODO: FIX ME
 	auto source = segment.succinct_vec;
-
+	/*
+	uint64_t min = segment.GetCommonMinFactor();
+	uint64_t max = segment.GetMax() - segment.GetMinFactor();
+	std::cout << "Min: " << min << ", Max: " << segment.GetMax() << std::endl;
+	 */
 	uint64_t min = UINT64_MAX;
 	uint64_t max = 0;
-
 	if (DBConfig::GetConfig(segment.db).succinct_extract_prefix_enabled) {
 		auto min_max = std::minmax_element(source.begin(), source.end());
 
 		if (min_max.first != source.end()) {
 			min = *min_max.first;
-			segment.SetMinFactor(min);
+			//segment.UpdateMinFactor(min);
 		}
 
     	if (min_max.second != source.end()) {
@@ -169,14 +173,20 @@ void SuccinctScanAndCompact(ColumnSegment &segment, ColumnScanState &state, idx_
     	}
 	}
 
-    uint8_t min_width = sdsl::bits::hi(max)+1;
+	std::cout << "Searched min: " << min << ", Searched max: " << max << std::endl;
+	std::cout << "Stored min: " << segment.GetMinFactor() << ", Stored Max: " << segment.GetMax() - segment.GetMinFactor() << std::endl;
+	//segment.UpdateMinFactor(min);
+	min = segment.GetMinFactor();
+	max = segment.GetMax() - segment.GetMinFactor();
+
+    uint8_t min_width = sdsl::bits::hi(max) + 1;
 	if (DBConfig::GetConfig(segment.db).succinct_padded_to_next_byte_enabled) {
 		min_width = ((min_width + 7) & (-8));
 	}
-
     uint8_t old_width = segment.succinct_vec.width();
 
 	if (old_width <= min_width) {
+		std::cout << "Old width is smaller than min width: " << old_width << " <= " << min_width << std::endl;
 		return SuccinctScanPartial<T>(segment, state, scan_count, result, /* result_offset= */ 0);
 	}
 
@@ -194,6 +204,7 @@ void SuccinctScanAndCompact(ColumnSegment &segment, ColumnScanState &state, idx_
 		if (i < scan_count) {
 			// Do actual scan and copy
 			auto entry_at_i = uint64_t(source[start + i]);
+			std::cout << "Entry at i: " << entry_at_i << ", min: " << min << std::endl;
 			memcpy(target_ptr + i * sizeof(T), &entry_at_i, sizeof(T));
 		}
 
@@ -231,8 +242,8 @@ void SuccinctFetchRow(ColumnSegment &segment, ColumnFetchState &state, row_t row
 	data_ptr_t target_ptr = FlatVector::GetData(result) + result_idx * sizeof(T);
 	for (idx_t i = 0; i < source.size(); ++i) {
 		auto entry_at_i = source[i];
-		if (segment.GetCommonMinFactor() != UINT64_MAX) {
-			entry_at_i += segment.GetCommonMinFactor();
+		if (segment.GetMinFactor() != UINT64_MAX) {
+			entry_at_i += segment.GetMinFactor();
 		}
 
 		for (idx_t j = 0; j < source.width() / 8; ++j) {
@@ -251,14 +262,11 @@ static unique_ptr<CompressionAppendState> SuccinctInitAppend(ColumnSegment &segm
 }
 
 template <class T>
-void SuccinctAppendLoop(SegmentStatistics &stats, sdsl::int_vector<> &target, idx_t target_offset, UnifiedVectorFormat &adata,
+pair<uint64_t, uint64_t> SuccinctAppendLoop(SegmentStatistics &stats, sdsl::int_vector<> &target, idx_t target_offset, UnifiedVectorFormat &adata,
                        idx_t offset, idx_t count, PhysicalType type) {
+	uint64_t unsigned_min_factor = UINT64_MAX;
+	uint64_t unsigned_max_factor = 0;
 	auto sdata = (T *)adata.data;
-	//std::cout << "target offset " << target_offset << ", count " << count << std::endl;
-	//std::cout << "Succinct size " << target.size() << std::endl;
-	//std::cout << "Append loop" << std::endl;
-	//uint64_t unsigned_min_factor = UINT64_MAX;
-	//uint64_t unsigned_max_factor = 0;
 
 	if (!adata.validity.AllValid()) {
 		for (idx_t i = 0; i < count; i++) {
@@ -267,12 +275,9 @@ void SuccinctAppendLoop(SegmentStatistics &stats, sdsl::int_vector<> &target, id
 			bool is_null = !adata.validity.RowIsValid(source_idx);
 			if (!is_null) {
 				NumericStatistics::Update<T>(stats, sdata[source_idx]);
-				//std::cout << "Target idx: " << target_idx << std::endl;
-				//std::cout << "Source: " << sdata[source_idx] << std::endl;
-				//std::cout << "Insert " << sdata[source_idx] << std::endl;
 				target[target_idx] = sdata[source_idx];
-				//unsigned_min_factor = std::min(unsigned_min_factor, uint64_t(sdata[source_idx]));
-				//unsigned_max_factor = std::max(unsigned_max_factor, uint64_t(sdata[source_idx]));
+				unsigned_min_factor = std::min(unsigned_min_factor, uint64_t(sdata[source_idx]));
+				unsigned_max_factor = std::max(unsigned_max_factor, uint64_t(sdata[source_idx]));
 			} else {
 				// we insert a NullValue<T> in the null gap for debuggability
 				// this value should never be used or read anywhere
@@ -284,33 +289,26 @@ void SuccinctAppendLoop(SegmentStatistics &stats, sdsl::int_vector<> &target, id
 			auto source_idx = adata.sel->get_index(offset + i);
 			auto target_idx = target_offset + i;
 			NumericStatistics::Update<T>(stats, sdata[source_idx]);
-			//std::cout << "Source: " << sdata[source_idx] << std::endl;
 			target[target_idx] = sdata[source_idx];
-			//unsigned_min_factor = std::min(unsigned_min_factor, uint64_t(sdata[source_idx]));
-			//unsigned_max_factor = std::max(unsigned_max_factor, uint64_t(sdata[source_idx]));
+			unsigned_min_factor = std::min(unsigned_min_factor, uint64_t(sdata[source_idx]));
+			unsigned_max_factor = std::max(unsigned_max_factor, uint64_t(sdata[source_idx]));
 		}
 	}
-	//std::cout << "Before: Size [MB]" << sdsl::size_in_mega_bytes(target) << std::endl;
-	//sdsl::util::bit_compress(target);
-	//std::cout << "After: Size [MB]" << sdsl::size_in_mega_bytes(target) << std::endl;
-	//std::cout << "Inserted " << count << ", vec has size of " << target.size() << std::endl;
-	//std::cout << "Finished succinct append loop" << std::endl;
-	//std::cout << "New max: " << unsigned_max_factor << std::endl;
-	//return {unsigned_min_factor, unsigned_max_factor};
+
+	return {unsigned_min_factor, unsigned_max_factor};
 }
 
 template <class T>
 idx_t SuccinctAppend(CompressionAppendState &append_state, ColumnSegment &segment, SegmentStatistics &stats,
                       UnifiedVectorFormat &data, idx_t offset, idx_t count) {
 	D_ASSERT(segment.GetBlockOffset() == 0);
-	//std::cout << "Start succinct append" << std::endl;
 
 	idx_t max_tuple_count = segment.SegmentSize() / sizeof(T);
 	idx_t copy_count = MinValue<idx_t>(count, max_tuple_count - segment.count);
 
-	SuccinctAppendLoop<T>(stats, segment.succinct_vec, segment.count, data, offset, copy_count, segment.type.InternalType());
-	//segment.UpdateMinFactor(min_max.first);
-	//segment.UpdateMaxFactor(min_max.second);
+	auto min_max = SuccinctAppendLoop<T>(stats, segment.succinct_vec, segment.count, data, offset, copy_count, segment.type.InternalType());
+	segment.UpdateMinFactor(min_max.first);
+	segment.UpdateMaxFactor(min_max.second);
 
 	segment.count += copy_count;
 	return copy_count;
@@ -319,7 +317,7 @@ idx_t SuccinctAppend(CompressionAppendState &append_state, ColumnSegment &segmen
 template <class T>
 idx_t SuccinctFinalizeAppend(ColumnSegment &segment, SegmentStatistics &stats) {
 	//std::cout << "Compact succinct vector" << std::endl;
-	sdsl::util::bit_compress(segment.succinct_vec);
+	//sdsl::util::bit_compress(segment.succinct_vec);
 	//std::cout << "Finalize succinct append" << std::endl;
 	return segment.count * sizeof(T);
 }

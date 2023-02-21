@@ -11,7 +11,7 @@ using namespace duckdb;
 
 #define NUM_INSERTS 1000000
 #define NUM_LOOKUPS 10000
-#define ZIPF_K 3
+#define ZIPF_K 1
 
 DUCKDB_BENCHMARK(SuccinctZipfDistribution, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {

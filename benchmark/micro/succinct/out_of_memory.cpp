@@ -12,7 +12,7 @@ using namespace duckdb;
 #define NUM_INSERTS 150000000
 #define NUM_LOOKUPS 100
 #define NUM_ZIPF_LOOKUPS 10000
-#define ZIPF_K 3
+#define ZIPF_K 2
 
 DUCKDB_BENCHMARK(SuccinctScanOOM, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {

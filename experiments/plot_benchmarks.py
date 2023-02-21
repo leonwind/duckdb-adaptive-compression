@@ -54,6 +54,7 @@ def _plot_list_as_barchart(data, ylabel="", title=""):
     plt.ylabel(ylabel)
     plt.xticks(rotation=90)
     plt.show()
+    plt.savefig(f"plots/{title}.png")
 
 
 def _extract_benchmark_groups(data):
@@ -92,7 +93,6 @@ def _plot_benchmark_group_total_memory(total_memory_per_benchmark):
 def _plot_initial_and_total_memory(initial_memory_per_benchmark, total_memory_per_benchmark):
     benchmark_groups_initial = _extract_benchmark_groups(initial_memory_per_benchmark)
     benchmark_groups_total = _extract_benchmark_groups(total_memory_per_benchmark)
-
     for name, initial_values in benchmark_groups_initial.items():
         total_values = benchmark_groups_total[name]
         initial_and_total = []
@@ -100,11 +100,12 @@ def _plot_initial_and_total_memory(initial_memory_per_benchmark, total_memory_pe
         for i in range(len(initial_values)):
             initial_and_total.append((initial_values[i][0] + "Initial", initial_values[i][1]))
             initial_and_total.append((total_values[i][0] + "Total", total_values[i][1]))
+        print(initial_and_total)
         
         _plot_list_as_barchart(initial_and_total, ylabel="Memory in Bytes", title=f"Initial and Total Memory of {name}")
 
 
 if __name__ == "__main__":
     data = read_csv_file("../benchmarks.csv")
-    #print(data)
+    print(data)
     plot_benchmarks(data)

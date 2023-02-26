@@ -9,6 +9,9 @@
 *.fot
 *.cb
 *.cb2
+*.nav
+*.snm
+*.vrb
 .*.lb
 
 # vimtex

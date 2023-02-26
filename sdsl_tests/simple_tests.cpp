@@ -152,6 +152,29 @@ void test11() {
 	std::cout << "Sum is: " << sum << std::endl;
 }
 
+void test12() {
+	int_vector<> v(5, 0);
+	v[0] = 7;
+	v[1] = 0;
+	v[2] = 5;
+	v[3] = 4;
+	v[4] = 6;
+	cout << size_in_bytes(v) << endl;
+	util::bit_compress(v);
+	cout << size_in_bytes(v) << endl;
+	cout << "Width " << (unsigned) v.width() << endl;
+}
+
+void test13() {
+	int_vector<> v(10000);
+	for (size_t i = 0; i < 10000; i++) {
+		v[i] = i;
+	}
+	cout << "Width: " << (unsigned) v.width() << ", size: " <<  size_in_bytes(v) << endl;
+	util::bit_compress(v);
+	cout << "Width: " << (unsigned) v.width() << ", size: " <<  size_in_bytes(v) << endl;
+}
+
 int main(){
 	//test1();
 	//test2();
@@ -163,5 +186,7 @@ int main(){
 	//test8();
 	//test9();
 	//test10();
-	test11();
+	//test11();
+	//test12();
+	test13();
 }

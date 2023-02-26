@@ -84,14 +84,48 @@ sdsl::util::bit_compress(v);
 cout << "Width: " << v.width() << ", size: " 
      << sdsl::size_in_bytes(v) << endl;
 \end{lstlisting}
-    
+
+\pause
+
 \begin{lstlisting}[style=shell]
 $ ./a.out
 Width: 32, size: 40008
 Width: 14, size: 17513
 \end{lstlisting}
 
-Reduces memory by $1 - \frac{17513}{40008} = 56.2\%$
+\pause
+
+\begin{center}
+Reduces memory by 56.2\% ($\approx$ 22.5 KB)
+\end{center}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Extract min element from vector}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Random Access of sdsl::int\_vector vs std::vector}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Byte-Align sdsl::int\_vector}
+\end{frame}
+
+\begin{frame}
+    \frametitle{DuckDB}
+\end{frame}
+
+\begin{frame}
+    \frametitle{DuckDB Storage Architecture}
+\end{frame}
+
+\begin{frame}
+    \frametitle{What do we need to change now?}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Benchmarks}
 \end{frame}
 
 \end{document}

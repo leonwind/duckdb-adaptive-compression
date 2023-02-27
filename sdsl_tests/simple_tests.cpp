@@ -175,6 +175,65 @@ void test13() {
 	cout << "Width: " << (unsigned) v.width() << ", size: " <<  size_in_bytes(v) << endl;
 }
 
+void test14() {
+	int_vector<> v(10000);
+	for (size_t i = 0; i < 10000; i++) {
+		v[i] = i + 10000000;
+	}
+	cout << "Width: " << (unsigned) v.width() << ", size: " <<  size_in_bytes(v) << endl;
+	util::bit_compress(v);
+	cout << "Width: " << (unsigned) v.width() << ", size: " <<  size_in_bytes(v) << endl;
+}
+
+void test15() {
+	size_t num_elements = 100 * 1000 * 1000;
+	size_t num_iterations = 1000000;
+	int_vector<> v1(num_elements);
+	for (size_t i = 0; i < num_elements; i++) {
+		v1[i] = 0; 
+	}
+	util::bit_compress(v1);
+	cout << "Width: " << (unsigned) v1.width() << ", size: " <<  size_in_bytes(v1) << endl;
+
+	srand((unsigned) time(nullptr));
+	
+	size_t sum = 0;
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+	for (size_t j = 0; j < num_iterations; ++j) {
+		//for (size_t i = 0; i < num_elements; i++) {
+			sum += v1[rand() % num_elements];
+		//}
+	}
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	std::cout << "Sum is: " << sum << std::endl;
+	std::cout << "Elapsed time: "
+	          << std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count()
+	          << "[ns]" << std::endl;
+}
+
+void test16() {
+	size_t num_elements = 100 * 1000 * 1000;
+	size_t num_iterations = 1000000;
+	std::vector<int32_t> v2;
+	for (size_t i = 0; i < num_elements; i++) {
+		v2.push_back(i);
+	}
+	srand((unsigned) time(nullptr));
+	
+	size_t sum = 0;
+	std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+	for (size_t j = 0; j < num_iterations; ++j) {
+		//for (size_t i = 0; i < num_elements; i++) {
+			sum += v2[rand() % num_elements];
+		//}
+	}
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+	std::cout << "Sum is: " << sum << std::endl;
+	std::cout << "Elapsed time: "
+	          << std::chrono::duration_cast<std::chrono::nanoseconds>(end - begin).count()
+	          << "[ns]" << std::endl;
+}
+
 int main(){
 	//test1();
 	//test2();
@@ -188,5 +247,8 @@ int main(){
 	//test10();
 	//test11();
 	//test12();
-	test13();
+	//test13(); 
+	//test14();
+	//test15();
+	test16();
 }

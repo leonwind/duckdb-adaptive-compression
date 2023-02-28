@@ -29,35 +29,35 @@
 
 \begin{frame}
     \frametitle{Project Introduction}
-    Compression of the In-Memory part of DuckDB
+    We want to compress the transient part of DuckDB
     %\vspace{1cm}
     \pause
 
     \begin{itemize}
-        \item Open Source SQL OLAP RDBMS developed in Amsterdam research centre CWI
-        (\url{https://github.com/duckdb/duckdb})
+        \item Open Source SQL OLAP RDBMS in-process developed in Amsterdam research centre CWI (SQLite for OLAP)
+        \url{https://github.com/duckdb/duckdb}
         \item Columnar Storage format
         \item Vectorized execution engine
-        \item Has lots of different compression possibilities for persistent data on disk 
+        \item Has already lots of different compression possibilities for persistent data on disk 
     \end{itemize}
 
     \vspace{1cm}
     \pause
-    How do we compress data in-memory while having efficient lookups without decompressing everything?
+    \textbf{How do we compress the transient data while having efficient lookups without decompressing everything?}
 \end{frame}
 
 
 \begin{frame}
-    \frametitle{Succinct Data Structures}
+    \frametitle{Background: Succinct Data Structures}
     
     \begin{itemize}
-        \item Data structures which uses close to the \textit{information-theoretic} lower bound of space but 
-    allows efficient query operations (in-place without needing to decompress)
+        \item Data structures which uses space close to the theoretic
+            lower bound but allows efficient query operations (in-place without needing to decompress)
         \item Exists for e.g. {\only<+>{(bit) vectors}\only<+->{\textbf{(bit) vectors}}}, trees, planar graphs, ...
     \end{itemize}
 \end{frame}
 
-
+% Example in db: Primary key and Enums (4 bytes but only 17 categories)
 \begin{frame}
     \frametitle{Succinct Integer Vector}
     \centering
@@ -115,7 +115,7 @@ Width: 14, size: 17513
 
 
 \begin{frame}[fragile]
-    \frametitle{Extract min element from \ttfamily{sdsl::int\_vector}}
+    \frametitle{Delta compression of \ttfamily{sdsl::int\_vector}}
 
 \begin{lstlisting}[style=C++]
 sdsl::int_vector<32> v(10000);
@@ -136,7 +136,7 @@ Width: 24, size: 30008
 
 
 \begin{frame}[fragile]
-    \frametitle{Extract min element from \ttfamily{sdsl::int\_vector}}
+    \frametitle{Delta compression of \ttfamily{sdsl::int\_vector}}
 \begin{lstlisting}[style=C++]
 sdsl::int_vector<32> v(10000);
 for (size_t i = 0; i < 10000; i++) 
@@ -156,17 +156,6 @@ Width: 14, size: 17513
 
 \pause
 In DuckDB we know the minimum of the vector directly without searching (column statistics)
-\end{frame}
-
-
-\begin{frame}[fragile]
-    \frametitle{Random Access of \ttfamily{sdsl::int\_vector[i]} vs \ttfamily{std::vector[i]}}
-
-\end{frame}
-
-
-\begin{frame}
-    \frametitle{Byte-Align \ttfamily{sdsl::int\_vector}}
 \end{frame}
 
 
@@ -197,7 +186,7 @@ SELECT * FROM t1;
 
 \begin{frame}[fragile]
     \frametitle{Benchmarks: Sequential Insert and total Scan}
-10.000 selections with Zipf Distribution of $10^6$ total rows.
+Scanning $10^6$ rows.
 
 \begin{lstlisting}[style=SQL]
 SELECT * FROM t1;
@@ -266,7 +255,7 @@ WHERE i == {ZIPF_DISTRIBUTED_NUMBER};
     \vspace{0.5cm}
     \pause
 
-    TODO:
+    Future Work:
     \begin{itemize}
         \item Need to investigate in access statistics to only compress rarely used column segments.
         \item Currently copying a lot of data as execution engine expects an uncompressed flat vector. Adapt execution engine to allow 

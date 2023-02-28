@@ -17,3 +17,6 @@
 # vimtex
 *.fdb_latexmk
 *.synctex.gz
+
+# Disallowed in root .gitignore
+!*.pdf

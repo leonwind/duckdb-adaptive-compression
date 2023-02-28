@@ -7,6 +7,7 @@ let
 in pkgs.mkShell {
     nativeBuildInputs = with pkgs; [
         python-packages
+        texlive.combined.scheme-full
     ];
 }
 

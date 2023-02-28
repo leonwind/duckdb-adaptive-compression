@@ -1,5 +1,20 @@
 import csv
+import matplotlib as mpl
+# Use pgf backend to directly export to LaTeX.
+# Must be set before importing pyplot.
+mpl.use('pgf')
+
 import matplotlib.pyplot as plt
+
+# Use LaTeX font
+plt.rcParams.update({
+    "font.family": "serif",  # use serif/main font for text elements
+    "text.usetex": True,     # use inline math for ticks
+    "pgf.rcfonts": False     # don't setup fonts from rc parameters
+})
+
+
+LATEX_FRAME_WIDTH =  307.28987
 
 
 def read_csv_file(filename):
@@ -47,14 +62,48 @@ def plot_benchmarks(csv_data):
     #_plot_list_as_barchart(initial_memory_per_benchmark.items(), ylabel="Memory in Bytes")
     #_plot_list_as_barchart(total_memory_per_benchmark.items(), ylabel="Memory in Bytes")
 
+def set_size(width_pt, fraction=1, subplots=(1, 1)):
+    """Set figure dimensions to sit nicely in our document.
+
+    Parameters
+    ----------
+    width_pt: float
+            Document width in points
+    fraction: float, optional
+            Fraction of the width which you wish the figure to occupy
+    subplots: array-like, optional
+            The number of rows and columns of subplots.
+    Returns
+    -------
+    fig_dim: tuple
+            Dimensions of figure in inches
+    """
+    # Width of figure (in pts)
+    fig_width_pt = width_pt * fraction
+    # Convert from pt to inches
+    inches_per_pt = 1 / 72.27
+
+    # Golden ratio to set aesthetic figure height
+    golden_ratio = (5**.5 - 1) / 2
+
+    # Figure width in inches
+    fig_width_in = fig_width_pt * inches_per_pt
+    # Figure height in inches
+    fig_height_in = fig_width_in * golden_ratio * (subplots[0] / subplots[1])
+
+    return (fig_width_in, fig_height_in)
 
 def _plot_list_as_barchart(data, ylabel="", title=""):
+    #fig = plt.figure()
+    fig = plt.figure(figsize=set_size(LATEX_FRAME_WIDTH))
     plt.title(title)
     plt.bar(*zip(*data))
     plt.ylabel(ylabel)
-    plt.xticks(rotation=90)
-    plt.show()
-    plt.savefig(f"plots/{title}.png")
+    filename = title.replace(" ", "_")
+    plt.savefig(f"plots/pgf/{filename}.pgf", format="pgf")
+    plt.savefig(f"plots/{filename}.png", dpi=fig.dpi)
+    plt.close()
+    #plt.show()
 
 
 def _extract_benchmark_groups(data):

@@ -79,18 +79,18 @@ struct FinalizeStringValueFunctor {
 };
 
 struct AggregateFunctor {
-	template <class OP, class T, class MAP_TYPE = unordered_map<T, idx_t>>
+	template <class OP, class T, class MAP_TYPE_DUCKDB = unordered_map<T, idx_t>>
 	static void ListExecuteFunction(Vector &result, Vector &state_vector, idx_t count) {
 	}
 };
 
 struct DistinctFunctor {
-	template <class OP, class T, class MAP_TYPE = unordered_map<T, idx_t>>
+	template <class OP, class T, class MAP_TYPE_DUCKDB = unordered_map<T, idx_t>>
 	static void ListExecuteFunction(Vector &result, Vector &state_vector, idx_t count) {
 
 		UnifiedVectorFormat sdata;
 		state_vector.ToUnifiedFormat(count, sdata);
-		auto states = (HistogramAggState<T, MAP_TYPE> **)sdata.data;
+		auto states = (HistogramAggState<T, MAP_TYPE_DUCKDB> **)sdata.data;
 
 		auto result_data = FlatVector::GetData<list_entry_t>(result);
 
@@ -118,12 +118,12 @@ struct DistinctFunctor {
 };
 
 struct UniqueFunctor {
-	template <class OP, class T, class MAP_TYPE = unordered_map<T, idx_t>>
+	template <class OP, class T, class MAP_TYPE_DUCKDB = unordered_map<T, idx_t>>
 	static void ListExecuteFunction(Vector &result, Vector &state_vector, idx_t count) {
 
 		UnifiedVectorFormat sdata;
 		state_vector.ToUnifiedFormat(count, sdata);
-		auto states = (HistogramAggState<T, MAP_TYPE> **)sdata.data;
+		auto states = (HistogramAggState<T, MAP_TYPE_DUCKDB> **)sdata.data;
 
 		auto result_data = FlatVector::GetData<uint64_t>(result);
 

@@ -47,9 +47,9 @@ struct VariableReturnBindData : public FunctionData {
 	}
 };
 
-template <class T, class MAP_TYPE = map<T, idx_t>>
+template <class T, class MAP_TYPE_DUCKDB = map<T, idx_t>>
 struct HistogramAggState {
-	MAP_TYPE *hist;
+	MAP_TYPE_DUCKDB *hist;
 };
 
 struct ArraySliceFun {

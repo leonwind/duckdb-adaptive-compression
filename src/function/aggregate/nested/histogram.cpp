@@ -8,15 +8,15 @@
 namespace duckdb {
 
 struct HistogramFunctor {
-	template <class T, class MAP_TYPE = map<T, idx_t>>
+	template <class T, class MAP_TYPE_DUCKDB = map<T, idx_t>>
 	static void HistogramUpdate(UnifiedVectorFormat &sdata, UnifiedVectorFormat &input_data, idx_t count) {
 
-		auto states = (HistogramAggState<T, MAP_TYPE> **)sdata.data;
+		auto states = (HistogramAggState<T, MAP_TYPE_DUCKDB> **)sdata.data;
 		for (idx_t i = 0; i < count; i++) {
 			if (input_data.validity.RowIsValid(input_data.sel->get_index(i))) {
 				auto state = states[sdata.sel->get_index(i)];
 				if (!state->hist) {
-					state->hist = new MAP_TYPE();
+					state->hist = new MAP_TYPE_DUCKDB();
 				}
 				auto value = (T *)input_data.data;
 				(*state->hist)[value[input_data.sel->get_index(i)]]++;
@@ -31,15 +31,15 @@ struct HistogramFunctor {
 };
 
 struct HistogramStringFunctor {
-	template <class T, class MAP_TYPE = map<T, idx_t>>
+	template <class T, class MAP_TYPE_DUCKDB = map<T, idx_t>>
 	static void HistogramUpdate(UnifiedVectorFormat &sdata, UnifiedVectorFormat &input_data, idx_t count) {
 
-		auto states = (HistogramAggState<T, MAP_TYPE> **)sdata.data;
+		auto states = (HistogramAggState<T, MAP_TYPE_DUCKDB> **)sdata.data;
 		for (idx_t i = 0; i < count; i++) {
 			if (input_data.validity.RowIsValid(input_data.sel->get_index(i))) {
 				auto state = states[sdata.sel->get_index(i)];
 				if (!state->hist) {
-					state->hist = new MAP_TYPE();
+					state->hist = new MAP_TYPE_DUCKDB();
 				}
 				auto value = (string_t *)input_data.data;
 				(*state->hist)[value[input_data.sel->get_index(i)].GetString()]++;
@@ -72,7 +72,7 @@ struct HistogramFunction {
 	}
 };
 
-template <class OP, class T, class MAP_TYPE>
+template <class OP, class T, class MAP_TYPE_DUCKDB>
 static void HistogramUpdateFunction(Vector inputs[], AggregateInputData &, idx_t input_count, Vector &state_vector,
                                     idx_t count) {
 
@@ -84,17 +84,17 @@ static void HistogramUpdateFunction(Vector inputs[], AggregateInputData &, idx_t
 	UnifiedVectorFormat input_data;
 	input.ToUnifiedFormat(count, input_data);
 
-	OP::template HistogramUpdate<T, MAP_TYPE>(sdata, input_data, count);
+	OP::template HistogramUpdate<T, MAP_TYPE_DUCKDB>(sdata, input_data, count);
 }
 
-template <class T, class MAP_TYPE>
+template <class T, class MAP_TYPE_DUCKDB>
 static void HistogramCombineFunction(Vector &state, Vector &combined, AggregateInputData &, idx_t count) {
 
 	UnifiedVectorFormat sdata;
 	state.ToUnifiedFormat(count, sdata);
-	auto states_ptr = (HistogramAggState<T, MAP_TYPE> **)sdata.data;
+	auto states_ptr = (HistogramAggState<T, MAP_TYPE_DUCKDB> **)sdata.data;
 
-	auto combined_ptr = FlatVector::GetData<HistogramAggState<T, MAP_TYPE> *>(combined);
+	auto combined_ptr = FlatVector::GetData<HistogramAggState<T, MAP_TYPE_DUCKDB> *>(combined);
 
 	for (idx_t i = 0; i < count; i++) {
 		auto state = states_ptr[sdata.sel->get_index(i)];
@@ -102,7 +102,7 @@ static void HistogramCombineFunction(Vector &state, Vector &combined, AggregateI
 			continue;
 		}
 		if (!combined_ptr[i]->hist) {
-			combined_ptr[i]->hist = new MAP_TYPE();
+			combined_ptr[i]->hist = new MAP_TYPE_DUCKDB();
 		}
 		D_ASSERT(combined_ptr[i]->hist);
 		D_ASSERT(state->hist);
@@ -112,13 +112,13 @@ static void HistogramCombineFunction(Vector &state, Vector &combined, AggregateI
 	}
 }
 
-template <class OP, class T, class MAP_TYPE>
+template <class OP, class T, class MAP_TYPE_DUCKDB>
 static void HistogramFinalizeFunction(Vector &state_vector, AggregateInputData &, Vector &result, idx_t count,
                                       idx_t offset) {
 
 	UnifiedVectorFormat sdata;
 	state_vector.ToUnifiedFormat(count, sdata);
-	auto states = (HistogramAggState<T, MAP_TYPE> **)sdata.data;
+	auto states = (HistogramAggState<T, MAP_TYPE_DUCKDB> **)sdata.data;
 
 	auto &mask = FlatVector::Validity(result);
 	auto old_len = ListVector::GetListSize(result);
@@ -163,15 +163,15 @@ unique_ptr<FunctionData> HistogramBindFunction(ClientContext &context, Aggregate
 	return make_unique<VariableReturnBindData>(function.return_type);
 }
 
-template <class OP, class T, class MAP_TYPE = map<T, idx_t>>
+template <class OP, class T, class MAP_TYPE_DUCKDB = map<T, idx_t>>
 static AggregateFunction GetHistogramFunction(const LogicalType &type) {
 
-	using STATE_TYPE = HistogramAggState<T, MAP_TYPE>;
+	using STATE_TYPE = HistogramAggState<T, MAP_TYPE_DUCKDB>;
 
 	return AggregateFunction("histogram", {type}, LogicalTypeId::MAP, AggregateFunction::StateSize<STATE_TYPE>,
 	                         AggregateFunction::StateInitialize<STATE_TYPE, HistogramFunction>,
-	                         HistogramUpdateFunction<OP, T, MAP_TYPE>, HistogramCombineFunction<T, MAP_TYPE>,
-	                         HistogramFinalizeFunction<OP, T, MAP_TYPE>, nullptr, HistogramBindFunction,
+	                         HistogramUpdateFunction<OP, T, MAP_TYPE_DUCKDB>, HistogramCombineFunction<T, MAP_TYPE_DUCKDB>,
+	                         HistogramFinalizeFunction<OP, T, MAP_TYPE_DUCKDB>, nullptr, HistogramBindFunction,
 	                         AggregateFunction::StateDestroy<STATE_TYPE, HistogramFunction>);
 }
 

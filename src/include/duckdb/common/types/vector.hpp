@@ -16,6 +16,7 @@
 #include "duckdb/common/types/value.hpp"
 #include "duckdb/common/types/vector_buffer.hpp"
 #include "duckdb/common/vector_size.hpp"
+#include <sdsl/vectors.hpp>
 
 namespace duckdb {
 
@@ -198,6 +199,8 @@ protected:
 	//! The buffer holding auxiliary data of the vector
 	//! e.g. a string vector uses this to store strings
 	buffer_ptr<VectorBuffer> auxiliary;
+
+	sdsl::int_vector<> succinct_vec;
 };
 
 //! The DictionaryBuffer holds a selection vector

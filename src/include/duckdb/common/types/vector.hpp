@@ -199,7 +199,7 @@ protected:
 	//! The buffer holding auxiliary data of the vector
 	//! e.g. a string vector uses this to store strings
 	buffer_ptr<VectorBuffer> auxiliary;
-
+	//! The succinct vector pointer
 	sdsl::int_vector<> succinct_vec;
 };
 
@@ -309,6 +309,10 @@ struct FlatVector {
 	}
 	DUCKDB_API static const SelectionVector *IncrementalSelectionVector();
 	static Value GetValuesFromOffsets(Vector &values, vector<idx_t> &offsets);
+};
+
+struct SuccinctIntVector {
+
 };
 
 struct ListVector {
@@ -467,10 +471,6 @@ struct SequenceVector {
 		int64_t sequence_count;
 		GetSequence(vector, start, increment, sequence_count);
 	}
-};
-
-struct SuccinctIntVector {
-
 };
 
 } // namespace duckdb

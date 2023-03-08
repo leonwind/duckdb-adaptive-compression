@@ -38,8 +38,9 @@ namespace duckdb {
 
 Catalog::Catalog(AttachedDatabase &db)
     : schemas(make_unique<CatalogSet>(*this, make_unique<DefaultSchemaGenerator>(*this))),
-      dependency_manager(make_unique<DependencyManager>(*this)), db(db) {
-}
+      dependency_manager(make_unique<DependencyManager>(*this)), db(db),
+      column_segment_catalog(ColumnSegmentCatalog()) {}
+
 Catalog::~Catalog() {
 }
 

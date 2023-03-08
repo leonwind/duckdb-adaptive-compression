@@ -9,11 +9,12 @@
 #pragma once
 
 #include "duckdb/catalog/catalog_entry.hpp"
-#include "duckdb/common/mutex.hpp"
-#include "duckdb/parser/query_error_context.hpp"
+#include "duckdb/catalog/catalog_entry/column_segment_catalog.hpp"
 #include "duckdb/catalog/catalog_transaction.hpp"
-#include "duckdb/common/unordered_set.hpp"
 #include "duckdb/common/atomic.hpp"
+#include "duckdb/common/mutex.hpp"
+#include "duckdb/common/unordered_set.hpp"
+#include "duckdb/parser/query_error_context.hpp"
 
 #include <functional>
 
@@ -227,9 +228,15 @@ public:
 
 	DUCKDB_API void Verify();
 
+	DUCKDB_API ColumnSegmentCatalog& GetColumnSegmentCatalog() {
+		return column_segment_catalog;
+	}
+
 private:
 	//! Reference to the database
 	AttachedDatabase &db;
+	//! Catalog with statistics for individual column segments
+	ColumnSegmentCatalog column_segment_catalog;
 
 private:
 	CatalogEntryLookup LookupEntryInternal(CatalogTransaction transaction, CatalogType type, const string &schema,

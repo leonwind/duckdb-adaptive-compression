@@ -100,6 +100,10 @@ ColumnSegment::ColumnSegment(ColumnSegment &other, idx_t start)
       segment_state(move(other.segment_state)), compacted(other.compacted),
       min_factor(other.min_factor), max_factor(other.max_factor) {
 	succinct_vec = std::move(other.succinct_vec);
+
+	auto& catalog = Catalog::GetSystemCatalog(db);
+	ColumnSegmentCatalog& column_segment_catalog = catalog.GetColumnSegmentCatalog();
+	column_segment_catalog.AddColumnSegment(block_id);
 }
 
 ColumnSegment::~ColumnSegment() {
@@ -114,6 +118,9 @@ void ColumnSegment::InitializeScan(ColumnScanState &state) {
 
 void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset,
                          bool entire_vector) {
+	auto& catalog = Catalog::GetSystemCatalog(db);
+	auto& column_segment_catalog = catalog.GetColumnSegmentCatalog();
+	column_segment_catalog.AddReadAccess(block_id);
 	if (entire_vector) {
 		D_ASSERT(result_offset == 0);
 		Scan(state, scan_count, result);

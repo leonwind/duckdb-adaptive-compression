@@ -24,6 +24,7 @@ public:
 
 private:
 	std::unordered_map<block_id_t, AccessStatistics> statistics;
+	idx_t event_counter;
 };
 
 } // namespace duckdb

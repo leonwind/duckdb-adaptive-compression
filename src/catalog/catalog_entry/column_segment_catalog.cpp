@@ -5,18 +5,15 @@
 
 namespace duckdb {
 
-ColumnSegmentCatalog::ColumnSegmentCatalog() {}
+ColumnSegmentCatalog::ColumnSegmentCatalog(): statistics(), event_counter(0) {}
 
 void ColumnSegmentCatalog::AddColumnSegment(uintptr_t block_id) {
 	statistics[block_id] = AccessStatistics{/* num_reads= */ 0};
 }
 
 void ColumnSegmentCatalog::AddReadAccess(uintptr_t block_id) {
-	if (statistics.find(block_id) == statistics.end()) {
-		statistics[block_id] = AccessStatistics{/* num_reads= */ 1};
-	} else {
-		statistics[block_id].num_reads++;
-	}
+	statistics[block_id].num_reads++;
+	event_counter++;
 }
 
 void ColumnSegmentCatalog::Print() {

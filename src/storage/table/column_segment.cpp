@@ -141,7 +141,7 @@ void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &resul
 		Compact();
 	}
 	function->scan_vector(*this, state, scan_count, result);
-	column_segment_catalog.Print();
+	//column_segment_catalog.Print();
 }
 
 void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset) {
@@ -151,7 +151,7 @@ void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector
 		Compact();
 	}
 	function->scan_partial(*this, state, scan_count, result, result_offset);
-	column_segment_catalog.Print();
+	//column_segment_catalog.Print();
 }
 
 //===--------------------------------------------------------------------===//

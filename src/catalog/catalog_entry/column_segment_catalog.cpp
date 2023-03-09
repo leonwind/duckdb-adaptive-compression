@@ -7,26 +7,28 @@ namespace duckdb {
 
 ColumnSegmentCatalog::ColumnSegmentCatalog() {}
 
-void ColumnSegmentCatalog::AddColumnSegment(block_id_t block_id) {
-	std::cout << "Add new block id: " << block_id << std::endl;
+void ColumnSegmentCatalog::AddColumnSegment(uintptr_t block_id) {
 	statistics[block_id] = AccessStatistics{/* num_reads= */ 0};
 }
 
-void ColumnSegmentCatalog::AddReadAccess(block_id_t block_id) {
-	std::cout << "Add read access for block id: " << block_id << std::endl;
-	statistics[block_id].num_reads++;
+void ColumnSegmentCatalog::AddReadAccess(uintptr_t block_id) {
+	if (statistics.find(block_id) == statistics.end()) {
+		statistics[block_id] = AccessStatistics{/* num_reads= */ 1};
+	} else {
+		statistics[block_id].num_reads++;
+	}
 }
 
 void ColumnSegmentCatalog::Print() {
-	std::vector<std::pair<block_id_t, AccessStatistics>> elems(statistics.begin(), statistics.end());
+	std::vector<std::pair<block_id_t, AccessStatistics>> v(statistics.begin(), statistics.end());
 
-	std::sort(elems.begin(), elems.end(),
-	          [](std::pair<block_id_t , AccessStatistics>& left,
-	             std::pair<block_id_t , AccessStatistics>  &right) {
+	std::sort(v.begin(), v.end(),
+	          [](std::pair<block_id_t, AccessStatistics>& left,
+	             std::pair<block_id_t, AccessStatistics>&right) {
 		          return left.second < right.second;
 	          });
 
-	for (auto& curr : elems) {
+	for (auto& curr : v) {
 		std::cout << curr.first << ": " << curr.second.num_reads << std::endl;
 	}
 }

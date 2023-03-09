@@ -162,7 +162,6 @@ private:
 	void Scan(ColumnScanState &state, idx_t scan_count, Vector &result);
 	void ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset);
 
-	void ExtractCommonMinFactor();
 	void BitCompress();
 	void Compact();
 
@@ -183,6 +182,8 @@ private:
 	uint64_t max_factor;
 	//! If the succinct vector is bit compressed.
 	bool compacted;
+	//! Column Segment Catalog to track access patterns over time.
+	ColumnSegmentCatalog& column_segment_catalog;
 };
 
 } // namespace duckdb

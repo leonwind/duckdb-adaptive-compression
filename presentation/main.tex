@@ -91,12 +91,12 @@
 \begin{frame}[fragile]
     \frametitle{SDSL: Integer Vectors}
 
-\begin{lstlisting}[style=C++]
+\begin{lstlisting}[style=C++,escapechar=!]
 sdsl::int_vector<32> v(10000);
 for (size_t i = 0; i < 10000; i++) v[i] = i;
 cout << "Width: " << v.width() << ", size: " 
      << sdsl::size_in_bytes(v) << endl;
-sdsl::util::bit_compress(v);
+!\colorbox{yellow}{sdsl::util::bit\_compress(v);}!
 cout << "Width: " << v.width() << ", size: " 
      << sdsl::size_in_bytes(v) << endl;
 \end{lstlisting}
@@ -139,13 +139,13 @@ Width: 24, size: 30008
 
 \begin{frame}[fragile]
     \frametitle{Delta compression of \ttfamily{sdsl::int\_vector}}
-\begin{lstlisting}[style=C++]
+\begin{lstlisting}[style=C++,escapechar=!]
 sdsl::int_vector<32> v(10000);
 for (size_t i = 0; i < 10000; i++) 
     v[i] = i + 10.000.000;
 cout << "Width: " << v.width() << ", size: " 
      << sdsl::size_in_bytes(v) << endl;
-extractMinFromVector(v);
+!\colorbox{yellow}{extractMinFromVector(v);}!
 sdsl::util::bit_compress(v);
 cout << "Width: " << v.width() << ", size: " 
      << sdsl::size_in_bytes(v) << endl;

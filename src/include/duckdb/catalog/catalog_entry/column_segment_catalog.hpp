@@ -9,7 +9,7 @@ struct AccessStatistics {
 	idx_t num_reads;
 
 	inline bool operator<(AccessStatistics x) {
-      	return num_reads < x.num_reads;
+      	return x.num_reads < num_reads;
     }
 };
 
@@ -18,8 +18,8 @@ class ColumnSegmentCatalog {
 public:
 	ColumnSegmentCatalog();
 
-	void AddColumnSegment(block_id_t block_id);
-	void AddReadAccess(block_id_t block_id);
+	void AddColumnSegment(uintptr_t block_id);
+	void AddReadAccess(uintptr_t block_id);
 	void Print();
 
 private:

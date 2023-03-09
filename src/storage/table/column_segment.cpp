@@ -79,7 +79,8 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
     : SegmentBase(start, count), db(db), type(move(type_p)), type_size(GetTypeIdSize(type.InternalType())),
       segment_type(segment_type), function(function_p), stats(type, move(statistics)), block(move(block)),
       block_id(block_id_p), offset(offset_p), segment_size(segment_size_p),
-      num_elements(0), min_factor(UINT64_MAX), max_factor(0), compacted(false) {
+      num_elements(0), min_factor(UINT64_MAX), max_factor(0), compacted(false),
+      column_segment_catalog(Catalog::GetSystemCatalog(db).GetColumnSegmentCatalog()) {
 	D_ASSERT(function);
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
@@ -91,6 +92,8 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
 	if (function->init_segment) {
 		segment_state = function->init_segment(*this, block_id);
 	}
+
+	column_segment_catalog.AddColumnSegment(reinterpret_cast<uintptr_t>(this));
 }
 
 ColumnSegment::ColumnSegment(ColumnSegment &other, idx_t start)
@@ -98,12 +101,10 @@ ColumnSegment::ColumnSegment(ColumnSegment &other, idx_t start)
       segment_type(other.segment_type), function(other.function), stats(move(other.stats)), block(move(other.block)),
       block_id(other.block_id), offset(other.offset), segment_size(other.segment_size), num_elements(other.num_elements),
       segment_state(move(other.segment_state)), compacted(other.compacted),
-      min_factor(other.min_factor), max_factor(other.max_factor) {
-	succinct_vec = std::move(other.succinct_vec);
+      min_factor(other.min_factor), max_factor(other.max_factor),
+      column_segment_catalog(other.column_segment_catalog) {
 
-	auto& catalog = Catalog::GetSystemCatalog(db);
-	ColumnSegmentCatalog& column_segment_catalog = catalog.GetColumnSegmentCatalog();
-	column_segment_catalog.AddColumnSegment(block_id);
+	succinct_vec = std::move(other.succinct_vec);
 }
 
 ColumnSegment::~ColumnSegment() {
@@ -118,9 +119,6 @@ void ColumnSegment::InitializeScan(ColumnScanState &state) {
 
 void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset,
                          bool entire_vector) {
-	auto& catalog = Catalog::GetSystemCatalog(db);
-	auto& column_segment_catalog = catalog.GetColumnSegmentCatalog();
-	column_segment_catalog.AddReadAccess(block_id);
 	if (entire_vector) {
 		D_ASSERT(result_offset == 0);
 		Scan(state, scan_count, result);
@@ -137,17 +135,23 @@ void ColumnSegment::Skip(ColumnScanState &state) {
 }
 
 void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &result) {
+	column_segment_catalog.AddReadAccess(reinterpret_cast<uintptr_t>(this));
+
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		Compact();
 	}
 	function->scan_vector(*this, state, scan_count, result);
+	column_segment_catalog.Print();
 }
 
 void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset) {
+	column_segment_catalog.AddReadAccess(reinterpret_cast<uintptr_t>(this));
+
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		Compact();
 	}
 	function->scan_partial(*this, state, scan_count, result, result_offset);
+	column_segment_catalog.Print();
 }
 
 //===--------------------------------------------------------------------===//
@@ -218,56 +222,9 @@ void ColumnSegment::Compact() {
 	BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
 }
 
-void ColumnSegment::ExtractCommonMinFactor() {
-	/*
-	for (idx_t i = 0; i < count; ++i) {
-		uint64_t curr = succinct_vec[i];
-		min_factor = std::min(min_factor, curr);
-	}
-	if (min_factor == UINT64_MAX) {
-		// Haven't updated it.
-		return;
-	}
-
-	for (idx_t i = 0; i < count; ++i){
-		succinct_vec[i] -= min_factor;
-	}
-	 */
-}
-
 void ColumnSegment::BitCompress() {
-	//std::cout << "Updated min: " << GetMinFactor() << ", Updated max: " << GetMax() << std::endl;
 	uint64_t min = GetMinFactor();
 	uint64_t max = GetMax() - GetMinFactor();
-
-	/*
-	uint64_t min = UINT64_MAX;
-	uint64_t max = 0;
-
-	if (DBConfig::GetConfig(db).succinct_extract_prefix_enabled) {
-		auto min_max = std::minmax_element(succinct_vec.begin(), succinct_vec.begin() + count);
-
-		if (min_max.first != succinct_vec.end()) {
-			min = *min_max.first;
-			UpdateMinFactor(min);
-		}
-
-    	if (min_max.second != succinct_vec.end()) {
-        	max = *min_max.second;
-    	}
-
-		if (min != UINT64_MAX) {
-			// Decrease max by common min factor
-			max -= min;
-		}
-	} else {
-		auto max_elem = std::max_element(succinct_vec.begin(), succinct_vec.begin() + count);
-		if (max_elem != succinct_vec.end()) {
-        	max = *max_elem;
-    	}
-	}
-	 */
-	//std::cout << "Min: " << min << ", Max: " << max << std::endl;
 
     uint8_t min_width = sdsl::bits::hi(max) + 1;
 	if (DBConfig::GetConfig(db).succinct_padded_to_next_byte_enabled) {

@@ -22,6 +22,8 @@
 \title{(Not yet Adaptive) Compression of In-Memory Databases}
 \subtitle{Database Implementation Lab Course}
 \author{Leon Windheuser}
+\date{March 14, 2023}
+
 
 \begin{document}
 
@@ -246,24 +248,39 @@ WHERE i == {ZIPF_DISTRIBUTED_NUMBER};
 
 
 \begin{frame}
-    \frametitle{Conclusion and Future Work}
+    \frametitle{Conclusion}
 
     \begin{itemize}
         \item For OLAPish queries it is not (yet?) worth it, large overhead.
         \item For OLTP transactions it might be worth it. Reduces memory by $\approx 40\%$ but increases runtime by $\approx 35\%$.
         \item Huge benefit if succinct representation fits in memory vs spilling to disk.
     \end{itemize}
-
-    \vspace{0.5cm}
-    \pause
-
-    Future Work:
-    \begin{itemize}
-        \item Need to investigate in access statistics to only compress rarely used column segments.
-        \item Currently copying a lot of data as execution engine expects an uncompressed flat vector. Adapt execution engine to allow 
-        succinct vectors as well since they allow random access. 
-    \end{itemize}
 \end{frame}
 
+
+\begin{frame}
+    \frametitle{Future Work and Discussion}
+
+    \begin{enumerate}
+
+    \item Copying and shifting data is most time consuming (40\%) since (DuckDB) execution engine expects a 
+    flat "normal" vector for OLAP queries (e.g. {\ttfamily{SELECT *}}).
+    \begin{itemize}
+        \item Non succinct just passes its data pointer, we need to decompress everything and copy the data.
+        \item Unecessary, since we still support random access and all operations needed for the execution engine.
+        \item Non succinct data pointer used everywhere in the execution engine ($>300$ appereances). \textbf{Is a major rewrite necessary?}
+    \end{itemize}
+
+    \vspace{0.3cm} 
+
+    \item Adaptive compression for rarely accessed column segments. Zipf Distribution accesses 4 of 50 segements 
+    over $>70\%$.
+    \begin{itemize}
+        \item How to track access statistics over time for column segments?
+        \item What if the access statistics change after greater period of time?
+    \end{itemize}
+\end{enumerate}
+
+\end{frame}
 
 \end{document}

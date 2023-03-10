@@ -263,24 +263,26 @@ WHERE i == {ZIPF_DISTRIBUTED_NUMBER};
 
     \begin{enumerate}
 
-    \item Copying and shifting data is most time consuming (40\%) since (DuckDB) execution engine expects a 
-    flat "normal" vector for OLAP queries (e.g. {\ttfamily{SELECT *}}).
+    \item Copying and shifting data is most time consuming ($\approx$ 40\%) since execution engine expects a 
+    flat "normal" vector.
     \begin{itemize}
-        \item Non succinct just passes its data pointer, we need to decompress everything and copy the data.
-        \item Unecessary, since we still support random access and all operations needed for the execution engine.
-        \item Non succinct data pointer used everywhere in the execution engine ($>300$ appereances). \textbf{Is a major rewrite necessary?}
+        \item Non succinct passes its data pointer, we need to decompress and copy the data.
+        \item Unecessary, since we still support random access and operations needed for the execution engine.
+        \item Non succinct data pointer used everywhere in the execution engine ($>300$ appearances). 
+        \textbf{Rewrite necessary?}
     \end{itemize}
 
     \vspace{0.3cm} 
 
-    \item Adaptive compression for rarely accessed column segments. Zipf Distribution accesses 4 of 50 segements 
-    over $>70\%$.
+    \item Adaptive compression for rarely accessed segments. 
+    Zipf Distribution accesses 4/50 segements over $70\%$ of the time.
     \begin{itemize}
-        \item How to track access statistics over time for column segments?
+        \item How to track access statistics over time for segments?
         \item What if the access statistics change after greater period of time?
     \end{itemize}
 \end{enumerate}
 
 \end{frame}
+
 
 \end{document}

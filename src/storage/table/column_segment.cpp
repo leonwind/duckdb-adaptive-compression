@@ -93,7 +93,7 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
 		segment_state = function->init_segment(*this, block_id);
 	}
 
-	column_segment_catalog.AddColumnSegment(reinterpret_cast<uintptr_t>(this));
+	column_segment_catalog.AddColumnSegment(this);
 }
 
 ColumnSegment::ColumnSegment(ColumnSegment &other, idx_t start)
@@ -135,7 +135,7 @@ void ColumnSegment::Skip(ColumnScanState &state) {
 }
 
 void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &result) {
-	column_segment_catalog.AddReadAccess(reinterpret_cast<uintptr_t>(this));
+	column_segment_catalog.AddReadAccess(this);
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		Compact();
@@ -145,7 +145,7 @@ void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &resul
 }
 
 void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset) {
-	column_segment_catalog.AddReadAccess(reinterpret_cast<uintptr_t>(this));
+	column_segment_catalog.AddReadAccess(this);
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		Compact();

@@ -1,9 +1,10 @@
 #pragma once
 
-#include "duckdb.h"
-#include "duckdb/storage/storage_info.hpp"
 #include <unordered_map>
+
 namespace duckdb {
+class ColumnSegment;
+class ColumnSegmentCatalog;
 
 struct AccessStatistics {
 	idx_t num_reads;
@@ -14,16 +15,18 @@ struct AccessStatistics {
 };
 
 class ColumnSegmentCatalog {
-
 public:
 	ColumnSegmentCatalog();
 
-	void AddColumnSegment(uintptr_t block_id);
-	void AddReadAccess(uintptr_t block_id);
+	void AddColumnSegment(ColumnSegment* segment);
+	void AddReadAccess(ColumnSegment* segment);
 	void Print();
 
 private:
-	std::unordered_map<block_id_t, AccessStatistics> statistics;
+	void CompressLowestKSegments();
+
+private:
+	std::unordered_map<ColumnSegment*, AccessStatistics> statistics;
 	idx_t event_counter;
 };
 

@@ -20,6 +20,7 @@
 #include <sdsl/vectors.hpp>
 
 namespace duckdb {
+class ColumnSegmentCatalog;
 class ColumnSegment;
 class BlockManager;
 class ColumnSegment;
@@ -151,6 +152,8 @@ public:
 		compacted = true;
 	}
 
+	void Compact();
+
 public:
 	ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block, LogicalType type, ColumnSegmentType segment_type,
 	              idx_t start, idx_t count, CompressionFunction *function, unique_ptr<BaseStatistics> statistics,
@@ -163,7 +166,6 @@ private:
 	void ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset);
 
 	void BitCompress();
-	void Compact();
 
 private:
 	idx_t num_elements;

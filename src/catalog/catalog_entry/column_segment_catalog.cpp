@@ -7,21 +7,40 @@ namespace duckdb {
 
 ColumnSegmentCatalog::ColumnSegmentCatalog(): statistics(), event_counter(0) {}
 
-void ColumnSegmentCatalog::AddColumnSegment(uintptr_t block_id) {
-	statistics[block_id] = AccessStatistics{/* num_reads= */ 0};
+void ColumnSegmentCatalog::AddColumnSegment(ColumnSegment* segment) {
+	statistics[segment] = AccessStatistics{/* num_reads= */ 0};
 }
 
-void ColumnSegmentCatalog::AddReadAccess(uintptr_t block_id) {
-	statistics[block_id].num_reads++;
+void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
+	statistics[segment].num_reads++;
 	event_counter++;
 }
 
-void ColumnSegmentCatalog::Print() {
-	std::vector<std::pair<block_id_t, AccessStatistics>> v(statistics.begin(), statistics.end());
+void ColumnSegmentCatalog::CompressLowestKSegments() {
+	std::vector<std::pair<ColumnSegment*, AccessStatistics>> v(statistics.begin(), statistics.end());
 
 	std::sort(v.begin(), v.end(),
-	          [](std::pair<block_id_t, AccessStatistics>& left,
-	             std::pair<block_id_t, AccessStatistics>&right) {
+	          [](std::pair<ColumnSegment*, AccessStatistics>& left,
+	             std::pair<ColumnSegment*, AccessStatistics>&right) {
+		          return left.second < right.second;
+	          });
+
+	float cum_sum = 0;
+	for (auto iter = v.begin(); iter != v.end(); iter++) {
+		cum_sum += iter->second.num_reads;
+		if (cum_sum / event_counter > 0.7 && !iter->first->IsBitCompressed()) {
+			iter->first->Compact();
+		}
+	}
+}
+
+
+void ColumnSegmentCatalog::Print() {
+	std::vector<std::pair<ColumnSegment*, AccessStatistics>> v(statistics.begin(), statistics.end());
+
+	std::sort(v.begin(), v.end(),
+	          [](std::pair<ColumnSegment*, AccessStatistics>& left,
+	             std::pair<ColumnSegment*, AccessStatistics>&right) {
 		          return left.second < right.second;
 	          });
 
@@ -29,5 +48,6 @@ void ColumnSegmentCatalog::Print() {
 		std::cout << curr.first << ": " << curr.second.num_reads << std::endl;
 	}
 }
+
 
 } // namespace duckdb

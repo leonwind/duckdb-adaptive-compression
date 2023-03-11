@@ -185,7 +185,7 @@ private:
 	//! If the succinct vector is bit compressed.
 	bool compacted;
 	//! Column Segment Catalog to track access patterns over time.
-	ColumnSegmentCatalog& column_segment_catalog;
+	ColumnSegmentCatalog* column_segment_catalog;
 };
 
 } // namespace duckdb

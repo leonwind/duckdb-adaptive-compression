@@ -33,13 +33,15 @@
 #include "duckdb/main/database_manager.hpp"
 #include "duckdb/function/built_in_functions.hpp"
 #include <algorithm>
+#include <thread>
 
 namespace duckdb {
 
 Catalog::Catalog(AttachedDatabase &db)
     : schemas(make_unique<CatalogSet>(*this, make_unique<DefaultSchemaGenerator>(*this))),
       dependency_manager(make_unique<DependencyManager>(*this)), db(db),
-      column_segment_catalog(ColumnSegmentCatalog()) {}
+      column_segment_catalog(ColumnSegmentCatalog()) {
+}
 
 Catalog::~Catalog() {
 }

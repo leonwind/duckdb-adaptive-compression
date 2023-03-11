@@ -22,7 +22,6 @@ public:
 	void AddReadAccess(ColumnSegment* segment);
 	void Print();
 
-private:
 	void CompressLowestKSegments();
 
 private:

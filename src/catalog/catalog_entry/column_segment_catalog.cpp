@@ -5,44 +5,60 @@
 
 namespace duckdb {
 
-ColumnSegmentCatalog::ColumnSegmentCatalog(): statistics(), event_counter(0) {
-	std::thread t(&ColumnSegmentCatalog::CompressLowestKSegments, this);
-	t.detach();
+ColumnSegmentCatalog::ColumnSegmentCatalog():
+      statistics(), event_counter(0), background_thread_started(false) {
 }
 
 void ColumnSegmentCatalog::AddColumnSegment(ColumnSegment* segment) {
 	statistics[segment] = AccessStatistics{/* num_reads= */ 0};
+	//std::cout << "Add segment " << &segment << " to access statistics" << std::endl;
+	//std::cout << "This pointer in AddColumnSegment: " << this << std::endl;
 }
 
 void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
-	statistics[segment].num_reads++;
+	//std::cout << "This pointer in AddReadAccess: " << this << std::endl;
+	if (!background_thread_started) {
+		std::thread t(&ColumnSegmentCatalog::CompressLowestKSegments, this);
+		t.detach();
+		background_thread_started = true;
+	}
+
+	if (statistics.find(segment) == statistics.end()) {
+		statistics[segment] = AccessStatistics{/* num_reads= */ 1};
+	} else {
+		statistics[segment].num_reads++;
+	}
 	event_counter++;
 }
 
 void ColumnSegmentCatalog::CompressLowestKSegments() {
-	if (event_counter < 10000) {
-		return;
-	}
+	while (true) {
+		//std::cout << "Event counter: " << event_counter << std::endl;
+		if (event_counter < 10000) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			continue;
+		}
 
-	std::vector<std::pair<ColumnSegment*, AccessStatistics>> v(statistics.begin(), statistics.end());
+		std::vector<std::pair<ColumnSegment*, AccessStatistics>> v(statistics.begin(), statistics.end());
+		std::sort(v.begin(), v.end(),
+				  [](std::pair<ColumnSegment*, AccessStatistics>& left,
+					 std::pair<ColumnSegment*, AccessStatistics>& right) {
+					  return left.second < right.second;
+				  });
 
-	std::sort(v.begin(), v.end(),
-	          [](std::pair<ColumnSegment*, AccessStatistics>& left,
-	             std::pair<ColumnSegment*, AccessStatistics>&right) {
-		          return left.second < right.second;
-	          });
+		float cum_sum = 0;
+		for (auto iter = v.begin(); iter != v.end(); iter++) {
+			// Bit Compress lowest 70% of the columns
+			if (cum_sum / event_counter > 0.7) {
+				return;
+			}
 
-	float cum_sum = 0;
-	for (auto iter = v.begin(); iter != v.end(); iter++) {
-		cum_sum += iter->second.num_reads;
-
-		// Bit Compress lowest 70% of the columns
-		if (cum_sum / event_counter > 0.7 && !iter->first->IsBitCompressed()) {
+			cum_sum += iter->second.num_reads;
 			iter->first->Compact();
 		}
-	}
 
-	std::this_thread::sleep_for(std::chrono::seconds(5));
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	}
 }
 
 
@@ -52,7 +68,8 @@ void ColumnSegmentCatalog::Print() {
 	std::sort(v.begin(), v.end(),
 	          [](std::pair<ColumnSegment*, AccessStatistics>& left,
 	             std::pair<ColumnSegment*, AccessStatistics>&right) {
-		          return left.second < right.second;
+		          // Sort descending
+		          return !(left.second < right.second);
 	          });
 
 	for (auto& curr : v) {

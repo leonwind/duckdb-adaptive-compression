@@ -39,8 +39,7 @@ namespace duckdb {
 
 Catalog::Catalog(AttachedDatabase &db)
     : schemas(make_unique<CatalogSet>(*this, make_unique<DefaultSchemaGenerator>(*this))),
-      dependency_manager(make_unique<DependencyManager>(*this)), db(db),
-      column_segment_catalog(ColumnSegmentCatalog()) {
+      dependency_manager(make_unique<DependencyManager>(*this)), db(db) {
 }
 
 Catalog::~Catalog() {
@@ -63,6 +62,7 @@ void Catalog::Initialize(bool load_builtin) {
 		BuiltinFunctions builtin(data, *this);
 		builtin.Initialize();
 	}
+	column_segment_catalog = std::move(ColumnSegmentCatalog());
 
 	Verify();
 }

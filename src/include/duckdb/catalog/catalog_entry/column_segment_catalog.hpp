@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <atomic>
 
 namespace duckdb {
 class ColumnSegment;
@@ -10,7 +11,7 @@ struct AccessStatistics {
 	idx_t num_reads;
 
 	inline bool operator<(AccessStatistics x) {
-      	return x.num_reads < num_reads;
+      	return num_reads < x.num_reads;
     }
 };
 
@@ -27,6 +28,7 @@ public:
 private:
 	std::unordered_map<ColumnSegment*, AccessStatistics> statistics;
 	idx_t event_counter;
+	bool background_thread_started;
 };
 
 } // namespace duckdb

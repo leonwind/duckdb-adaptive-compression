@@ -225,7 +225,7 @@ void SuccinctScanAndCompact(ColumnSegment &segment, ColumnScanState &state, idx_
 
 template <class T>
 void SuccinctScan(ColumnSegment &segment, ColumnScanState &state, idx_t scan_count, Vector &result) {
-	if (segment.IsBitCompressed()) {
+	if (segment.IsBitCompressed() || true) {
 		SuccinctScanPartial<T>(segment, state, scan_count, result, /* result_offset= */ 0);
 	} else {
 		SuccinctScanAndCompact<T>(segment, state, scan_count, result, /* result_offset= */ 0);

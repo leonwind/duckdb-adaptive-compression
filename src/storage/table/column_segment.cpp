@@ -84,16 +84,19 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
 	D_ASSERT(function);
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
+		//std::cout << "Create SUCCINCT transient segment at " << this << std::endl;
 		succinct_vec.width(type_size * 8);
 		succinct_vec.resize(segment_size / type_size);
 		BufferManager::GetBufferManager(db).AddToDataSize(sdsl::size_in_bytes(succinct_vec));
+	} else {
+		//std::cout << "Create UNCOMPRESSED transient segment at " << this << std::endl;
 	}
 
 	if (function->init_segment) {
 		segment_state = function->init_segment(*this, block_id);
 	}
 
-	column_segment_catalog->AddColumnSegment(this);
+	//column_segment_catalog->AddColumnSegment(*this);
 }
 
 ColumnSegment::ColumnSegment(ColumnSegment &other, idx_t start)
@@ -103,8 +106,8 @@ ColumnSegment::ColumnSegment(ColumnSegment &other, idx_t start)
       segment_state(move(other.segment_state)), compacted(other.compacted),
       min_factor(other.min_factor), max_factor(other.max_factor),
       column_segment_catalog(other.column_segment_catalog) {
-
 	succinct_vec = std::move(other.succinct_vec);
+	column_segment_catalog->AddColumnSegment(this);
 }
 
 ColumnSegment::~ColumnSegment() {
@@ -136,21 +139,26 @@ void ColumnSegment::Skip(ColumnScanState &state) {
 
 void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &result) {
 	column_segment_catalog->AddReadAccess(this);
-
+	//std::cout << "Scan at " << this << std::endl;
+	bit_compression_lock.lock();
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
-		Compact();
+		//Compact();
 	}
 	function->scan_vector(*this, state, scan_count, result);
+	bit_compression_lock.unlock();
 	//column_segment_catalog.Print();
 }
 
 void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset) {
 	column_segment_catalog->AddReadAccess(this);
+	//std::cout << "Scan at " << this << std::endl;
+	bit_compression_lock.lock();
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
-		Compact();
+		//Compact();
 	}
 	function->scan_partial(*this, state, scan_count, result, result_offset);
+	bit_compression_lock.unlock();
 	//column_segment_catalog.Print();
 }
 
@@ -202,16 +210,17 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		if (num_elements >= succinct_vec.size()) {
-			Compact();
+			//Compact();
 		}
 	}
 	return copy_count;
 }
 
 void ColumnSegment::Compact() {
-	if (compacted || function->type != CompressionType::COMPRESSION_SUCCINCT) {
+	if (compacted || num_elements == 0 || function->type != CompressionType::COMPRESSION_SUCCINCT) {
 		return;
 	}
+	//std::cout << "Compact at " << this << std::endl;
 
 	size_t size_before_compress = sdsl::size_in_bytes(succinct_vec);
 
@@ -223,6 +232,9 @@ void ColumnSegment::Compact() {
 }
 
 void ColumnSegment::BitCompress() {
+	//std::cout << "Before lock" << std::endl;
+	bit_compression_lock.lock();
+	//std::cout << "After lock" << std::endl;
 	uint64_t min = GetMinFactor();
 	uint64_t max = GetMax() - GetMinFactor();
 
@@ -232,7 +244,7 @@ void ColumnSegment::BitCompress() {
 		//std::cout << "Padded min width: " << (unsigned) min_width << std::endl;
 	}
     uint8_t old_width = succinct_vec.width();
-
+	//std::cout << "Compact with min " << min << std::endl;
     if (old_width > min_width) {
         const uint64_t* read_data = succinct_vec.data();
         uint64_t* write_data = succinct_vec.data();
@@ -241,6 +253,7 @@ void ColumnSegment::BitCompress() {
 
         for (size_t i = 0; i < count; ++i) {
             uint64_t x = sdsl::bits::read_int_and_move(read_data, read_offset, old_width);
+			//std::cout << "Compact entry at " << i << " is " << x << std::endl;
 			if (min != UINT64_MAX) {
 				x -= min;
 			}
@@ -250,6 +263,8 @@ void ColumnSegment::BitCompress() {
         succinct_vec.bit_resize(count * min_width);
         succinct_vec.width(min_width);
     }
+	bit_compression_lock.unlock();
+	//std::cout << "Finished compression, after unlock" << std::endl;
 }
 
 idx_t ColumnSegment::FinalizeAppend(ColumnAppendState &state) {

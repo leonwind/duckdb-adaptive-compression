@@ -18,6 +18,7 @@
 #include "duckdb/storage/table/scan_state.hpp"
 #include "duckdb/function/compression_function.hpp"
 #include <sdsl/vectors.hpp>
+#include <mutex>
 
 namespace duckdb {
 class ColumnSegmentCatalog;
@@ -186,6 +187,8 @@ private:
 	bool compacted;
 	//! Column Segment Catalog to track access patterns over time.
 	ColumnSegmentCatalog* column_segment_catalog;
+	//! Bit Compression Lock for adaptive compression using a background thread.
+	std::mutex bit_compression_lock;
 };
 
 } // namespace duckdb

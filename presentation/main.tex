@@ -1,4 +1,4 @@
-\documentclass{beamer}
+\documentclass[aspectratio=43]{beamer}
 \usepackage{caption}
 \usepackage[utf8]{inputenc}
 \usepackage[english]{babel}
@@ -33,7 +33,6 @@
 \begin{frame}
     \frametitle{Project Introduction}
     We want to compress the transient part of DuckDB
-    %\vspace{1cm}
     \pause
 
     \begin{itemize}
@@ -55,9 +54,8 @@
     \frametitle{Background: Succinct Data Structures}
     
     \begin{itemize}
-        \item Data structures which uses space close to the theoretic
-            lower bound but allows efficient query operations (in-place without needing to decompress)
-        \item Exists for e.g. {\only<+>{(bit) vectors}\only<+->{\textbf{(bit) vectors}}}, trees, planar graphs, ...
+        \item Data structures that use space close to the theoretic lower bound but allow efficient query operations (in place without needing to decompress)
+        \item Exists e.g. {\only<+>{(bit) vectors}\only<+->{\textbf{(bit) vectors}}}, trees, planar graphs, ...
     \end{itemize}
 \end{frame}
 
@@ -65,12 +63,12 @@
 \begin{frame}
     \frametitle{Succinct Integer Vector}
     \centering
-    Space requirement for integer $x$ is $\ell = \lfloor \log_2(x) \rfloor + 1$ bits
+    Space requirement for integer $x$ is $\ell = \lceil \log_2(x) \rceil$ bits
 
     \includegraphics[width=\framewidth]{figures/excalidraw/bit-int-vector.png}
     \pause
 
-    Encode integers with the minimal length of the max integer $3 = \lfloor \log_2(7) \rfloor + 1$ \\
+    Encode integers with the minimal length of the max integer $3 = \lceil \log_2(7) \rceil$ \\
     \vspace{0.5cm} 
     \includegraphics[width=0.75\framewidth]{figures/excalidraw/bit-compressed-int-vector.png}
 
@@ -85,7 +83,8 @@
     \begin{itemize}
         \item C++11 library and abstraction for succinct data structures
         \item Open Source \url{https://github.com/simongog/sdsl-lite}
-        \item Contains varierty of different data structures. For now we only used the \textbf{Integer Vectors}.
+        \item Contains variety of succinct data structures. 
+        We use their \textbf{Integer Vector} interface to compress integers.
     \end{itemize}
 \end{frame}
 
@@ -119,7 +118,7 @@ Width: 14, size: 17513
 
 
 \begin{frame}[fragile]
-    \frametitle{Delta compression of \ttfamily{sdsl::int\_vector}}
+    \frametitle{Delta Compression of \ttfamily{sdsl::int\_vector}}
 
 \begin{lstlisting}[style=C++]
 sdsl::int_vector<32> v(10000);
@@ -140,7 +139,7 @@ Width: 24, size: 30008
 
 
 \begin{frame}[fragile]
-    \frametitle{Delta compression of \ttfamily{sdsl::int\_vector}}
+    \frametitle{Delta Compression of \ttfamily{sdsl::int\_vector}}
 \begin{lstlisting}[style=C++,escapechar=!]
 sdsl::int_vector<32> v(10000);
 for (size_t i = 0; i < 10000; i++) 
@@ -164,20 +163,20 @@ In DuckDB we know the minimum of the vector directly without searching (column s
 
 
 \begin{frame}
-    \frametitle{DuckDB Storage Architecture 100 meter view}
+    \frametitle{DuckDB Storage Architecture Bird's Eye View (100 meter)}
     \includegraphics[width=\framewidth]{figures/excalidraw/duckdb-high-level-storage-arch.png}
 \end{frame}
 
 
 \begin{frame}
-    \frametitle{DuckDB Storage Architecture 10 meter view}
+    \frametitle{DuckDB Storage Architecture Bird's Eye View (10 meter)}
     \includegraphics[width=\framewidth]{figures/excalidraw/duckdb-column-segment-look.png}
 
 \end{frame}
 
 
 \begin{frame}[fragile]
-    \frametitle{Benchmarks: Sequential Insert and total Scan}
+    \frametitle{Evaluation: Sequential Insert and Total Scan}
 Scanning $10^6$ rows.
 
 \begin{lstlisting}[style=SQL]
@@ -189,7 +188,7 @@ SELECT * FROM t1;
 
 
 \begin{frame}[fragile]
-    \frametitle{Benchmarks: Sequential Insert and total Scan}
+    \frametitle{Evaluation: Sequential Insert and Total Scan}
 Scanning $10^6$ rows.
 
 \begin{lstlisting}[style=SQL]
@@ -201,7 +200,7 @@ SELECT * FROM t1;
 
 
 \begin{frame}[fragile]
-    \frametitle{Benchmarks: Zipf Selection}
+    \frametitle{Evaluation: Zipf Selection}
 10.000 selections with Zipf Distribution of $10^6$ total rows.
 
 \begin{lstlisting}[style=SQL]
@@ -214,7 +213,7 @@ WHERE i == {ZIPF_DISTRIBUTED_NUMBER};
 
 
 \begin{frame}[fragile]
-    \frametitle{Benchmarks: Zipf Selection}
+    \frametitle{Evaluation: Zipf Selection}
 10.000 selections with Zipf Distribution of $10^6$ total rows.
 
 \begin{lstlisting}[style=SQL]
@@ -226,7 +225,7 @@ WHERE i == {ZIPF_DISTRIBUTED_NUMBER};
 \end{frame}
 
 \begin{frame}[fragile]
-    \frametitle{Benchmarks: Zipf Out Of Memory (Limit 1GB)}
+    \frametitle{Evaluation: Zipf Out-Of-Memory (Limit 1GB)}
 \begin{lstlisting}[style=SQL]
 SELECT i FROM t1 
 WHERE i == {ZIPF_DISTRIBUTED_NUMBER};
@@ -237,7 +236,7 @@ WHERE i == {ZIPF_DISTRIBUTED_NUMBER};
 
 
 \begin{frame}[fragile]
-    \frametitle{Benchmarks: Zipf Out Of Memory (Limit 1GB)}
+    \frametitle{Benchmarks: Zipf Out-Of-Memory (Limit 1GB)}
 \begin{lstlisting}[style=SQL]
 SELECT i FROM t1 
 WHERE i == {ZIPF_DISTRIBUTED_NUMBER};

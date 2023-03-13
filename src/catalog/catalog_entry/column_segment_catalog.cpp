@@ -10,9 +10,11 @@ ColumnSegmentCatalog::ColumnSegmentCatalog():
 }
 
 void ColumnSegmentCatalog::AddColumnSegment(ColumnSegment* segment) {
-	statistics[segment] = AccessStatistics{/* num_reads= */ 0};
-	//std::cout << "Add segment " << &segment << " to access statistics" << std::endl;
-	//std::cout << "This pointer in AddColumnSegment: " << this << std::endl;
+	if (segment->function->type == CompressionType::COMPRESSION_SUCCINCT) {
+		statistics[segment] = AccessStatistics{/* num_reads= */ 0};
+		//std::cout << "Add segment " << &segment << " to access statistics" << std::endl;
+		//std::cout << "This pointer in AddColumnSegment: " << this << std::endl;
+	}
 }
 
 void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
@@ -24,21 +26,25 @@ void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 	}
 
 	if (statistics.find(segment) == statistics.end()) {
-		statistics[segment] = AccessStatistics{/* num_reads= */ 1};
+		//statistics[segment] = AccessStatistics{/* num_reads= */ 1};
+		if (segment->function->type == CompressionType::COMPRESSION_SUCCINCT) {
+			std::cout << "SHOULD NEVER HAPPEN NOW???" << std::endl;
+		}
 	} else {
 		statistics[segment].num_reads++;
+		event_counter++;
 	}
-	event_counter++;
 }
 
 void ColumnSegmentCatalog::CompressLowestKSegments() {
 	while (true) {
 		//std::cout << "Event counter: " << event_counter << std::endl;
-		if (event_counter < 10000) {
+		if (event_counter < 50000) {
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 			continue;
 		}
 
+		idx_t curr_counter{event_counter};
 		std::vector<std::pair<ColumnSegment*, AccessStatistics>> v(statistics.begin(), statistics.end());
 		std::sort(v.begin(), v.end(),
 				  [](std::pair<ColumnSegment*, AccessStatistics>& left,
@@ -48,13 +54,17 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 
 		float cum_sum = 0;
 		for (auto iter = v.begin(); iter != v.end(); iter++) {
-			// Bit Compress lowest 70% of the columns
-			if (cum_sum / event_counter > 0.7) {
-				return;
+			if (iter->first->IsBitCompressed()) {
+				continue;
 			}
 
 			cum_sum += iter->second.num_reads;
-			iter->first->Compact();
+			if (cum_sum / curr_counter < 0.7) {
+				iter->first->Compact();
+			} else {
+				Print();
+				return;
+			}
 		}
 
 		std::this_thread::sleep_for(std::chrono::milliseconds(500));
@@ -72,8 +82,11 @@ void ColumnSegmentCatalog::Print() {
 		          return !(left.second < right.second);
 	          });
 
+	idx_t curr_counter{event_counter};
 	for (auto& curr : v) {
-		std::cout << curr.first << ": " << curr.second.num_reads << std::endl;
+		std::cout << curr.first << ": " << curr.second.num_reads
+		          << " / " << curr_counter
+		          <<", compacted: "  << curr.first->IsBitCompressed() << std::endl;
 	}
 }
 

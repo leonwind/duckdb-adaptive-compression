@@ -194,7 +194,7 @@
 \definecolor{textcolor}{rgb}{0.000000,0.000000,0.000000}%
 \pgfsetstrokecolor{textcolor}%
 \pgfsetfillcolor{textcolor}%
-\pgftext[x=3.249030in,y=0.191843in,,top]{\color{textcolor}\rmfamily\fontsize{10.000000}{12.000000}\selectfont NonSuccinct}%
+\pgftext[x=3.249030in,y=0.191843in,,top]{\color{textcolor}\rmfamily\fontsize{10.000000}{12.000000}\selectfont Non-succinct}%
 \end{pgfscope}%
 \begin{pgfscope}%
 \pgfsetbuttcap%

@@ -10,7 +10,7 @@ ColumnSegmentCatalog::ColumnSegmentCatalog():
 }
 
 void ColumnSegmentCatalog::AddColumnSegment(ColumnSegment* segment) {
-	if (segment->function->type == CompressionType::COMPRESSION_SUCCINCT) {
+	if (segment->succinct_possible) {
 		statistics[segment] = AccessStatistics{/* num_reads= */ 0};
 		//std::cout << "Add segment " << &segment << " to access statistics" << std::endl;
 		//std::cout << "This pointer in AddColumnSegment: " << this << std::endl;
@@ -20,14 +20,14 @@ void ColumnSegmentCatalog::AddColumnSegment(ColumnSegment* segment) {
 void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 	//std::cout << "This pointer in AddReadAccess: " << this << std::endl;
 	if (!background_thread_started) {
+		background_thread_started = true;
 		std::thread t(&ColumnSegmentCatalog::CompressLowestKSegments, this);
 		t.detach();
-		background_thread_started = true;
 	}
 
-	if (statistics.find(segment) == statistics.end()) {
+	if (statistics.find(segment) == statistics.end() || segment == nullptr) {
 		//statistics[segment] = AccessStatistics{/* num_reads= */ 1};
-		if (segment->function->type == CompressionType::COMPRESSION_SUCCINCT) {
+		if (segment->succinct_possible) {
 			std::cout << "SHOULD NEVER HAPPEN NOW???" << std::endl;
 		}
 	} else {
@@ -37,10 +37,12 @@ void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 }
 
 void ColumnSegmentCatalog::CompressLowestKSegments() {
-	while (true) {
+	bool finished = false;
+	while (!finished) {
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
 		//std::cout << "Event counter: " << event_counter << std::endl;
 		if (event_counter < 50000) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 			continue;
 		}
 
@@ -62,12 +64,15 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 			if (cum_sum / curr_counter < 0.7) {
 				iter->first->Compact();
 			} else {
-				Print();
-				return;
+				finished = true;
+				break;
 			}
 		}
+	}
 
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+	while (true) {
+		//Print();
+		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
 }
 
@@ -77,16 +82,17 @@ void ColumnSegmentCatalog::Print() {
 
 	std::sort(v.begin(), v.end(),
 	          [](std::pair<ColumnSegment*, AccessStatistics>& left,
-	             std::pair<ColumnSegment*, AccessStatistics>&right) {
+	             std::pair<ColumnSegment*, AccessStatistics>& right) {
+		          std::cout << "Left: " << left.second.num_reads << ", Right: " << right.second.num_reads << std::endl;
 		          // Sort descending
 		          return !(left.second < right.second);
 	          });
 
 	idx_t curr_counter{event_counter};
 	for (auto& curr : v) {
-		std::cout << curr.first << ": " << curr.second.num_reads
-		          << " / " << curr_counter
-		          <<", compacted: "  << curr.first->IsBitCompressed() << std::endl;
+		std::cout << curr.first << ": "
+		          << curr.second.num_reads << "/" << curr_counter
+		          << ", compacted: "  << curr.first->IsBitCompressed() << std::endl;
 	}
 }
 

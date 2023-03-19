@@ -58,6 +58,8 @@ public:
 	shared_ptr<BlockHandle> block;
 
 	sdsl::int_vector<> succinct_vec;
+	//! If succinct compression is possible, e.g. its an integer column
+	bool succinct_possible;
 
 	static unique_ptr<ColumnSegment> CreatePersistentSegment(DatabaseInstance &db, BlockManager &block_manager,
 	                                                         block_id_t id, idx_t offset, const LogicalType &type_p,
@@ -158,7 +160,7 @@ public:
 public:
 	ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block, LogicalType type, ColumnSegmentType segment_type,
 	              idx_t start, idx_t count, CompressionFunction *function, unique_ptr<BaseStatistics> statistics,
-	              block_id_t block_id, idx_t offset, idx_t segment_size);
+	              block_id_t block_id, idx_t offset, idx_t segment_size, bool succinct_possible);
 
 	ColumnSegment(ColumnSegment &other, idx_t start);
 

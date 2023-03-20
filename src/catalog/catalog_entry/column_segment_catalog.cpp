@@ -6,7 +6,8 @@
 namespace duckdb {
 
 ColumnSegmentCatalog::ColumnSegmentCatalog():
-      statistics(), event_counter(0), background_thread_started(false) {
+      statistics(), event_counter(0), background_thread_started(false),
+      background_compaction_enabled(false) {
 }
 
 void ColumnSegmentCatalog::AddColumnSegment(ColumnSegment* segment) {
@@ -19,7 +20,7 @@ void ColumnSegmentCatalog::AddColumnSegment(ColumnSegment* segment) {
 
 void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 	//std::cout << "This pointer in AddReadAccess: " << this << std::endl;
-	if (!background_thread_started) {
+	if (background_compaction_enabled && !background_thread_started) {
 		background_thread_started = true;
 		std::thread t(&ColumnSegmentCatalog::CompressLowestKSegments, this);
 		t.detach();

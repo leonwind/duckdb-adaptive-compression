@@ -160,7 +160,8 @@ public:
 public:
 	ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block, LogicalType type, ColumnSegmentType segment_type,
 	              idx_t start, idx_t count, CompressionFunction *function, unique_ptr<BaseStatistics> statistics,
-	              block_id_t block_id, idx_t offset, idx_t segment_size, bool succinct_possible);
+	              block_id_t block_id, idx_t offset, idx_t segment_size, bool succinct_possible,
+	              bool background_compaction_enabled);
 
 	ColumnSegment(ColumnSegment &other, idx_t start);
 
@@ -168,7 +169,8 @@ private:
 	void Scan(ColumnScanState &state, idx_t scan_count, Vector &result);
 	void ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset);
 
-	void BitCompress();
+	void BitCompressFromSuccinct();
+	void BitCompressFromUncompressed();
 
 private:
 	idx_t num_elements;
@@ -191,6 +193,8 @@ private:
 	ColumnSegmentCatalog* column_segment_catalog;
 	//! Bit Compression Lock for adaptive compression using a background thread.
 	std::mutex bit_compression_lock;
+	//! If background (adaptive) compaction is enabled or if we need to compact ourselves.
+	bool background_compaction_enabled;
 };
 
 } // namespace duckdb

@@ -192,6 +192,9 @@ public:
 	bool succinct_extract_prefix_enabled = true;
 	//! Enable succinct compression and pad to the next byte.
 	bool succinct_padded_to_next_byte_enabled = false;
+	//! Enable adaptive succinct compression using background thread on rarely used
+	//! segments.
+	bool adaptive_succinct_compression_enabled = false;
 
 public:
 	DUCKDB_API static DBConfig &GetConfig(ClientContext &context);

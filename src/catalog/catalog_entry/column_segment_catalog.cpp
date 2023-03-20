@@ -39,7 +39,7 @@ void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 void ColumnSegmentCatalog::CompressLowestKSegments() {
 	bool finished = false;
 	while (!finished) {
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
+		std::this_thread::sleep_for(std::chrono::seconds(10));
 
 		//std::cout << "Event counter: " << event_counter << std::endl;
 		if (event_counter < 50000) {
@@ -70,8 +70,8 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 		}
 	}
 
-	while (true) {
-		//Print();
+	while (true && false) {
+		Print();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
 }

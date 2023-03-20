@@ -5,12 +5,14 @@
 #include "duckdb/storage/table/column_segment.hpp"
 #include "zipf.cpp"
 #include <iostream>
+#include <chrono>
 
 using namespace duckdb;
 
-#define NUM_INSERTS 1000000
-#define NUM_LOOKUPS 10000
+#define NUM_INSERTS 10000000 // 10 Million
+#define NUM_LOOKUPS 1000000 // 1 Million
 #define ZIPF_K 1
+#define DURATION std::chrono::seconds(10)
 
 DUCKDB_BENCHMARK(SuccinctZipfDistributionOverTime, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
@@ -33,13 +35,39 @@ void Load(DuckDBBenchmarkState *state) override {
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
-	state->conn.Query("BEGIN TRANSACTION");
-	for (int i = 0; i < NUM_LOOKUPS; ++i) {
+	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+	size_t i = 0;
+
+	std::chrono::steady_clock::time_point qps_start = std::chrono::steady_clock::now();
+	std::vector<std::pair<size_t, size_t>> qps;
+	size_t transaction_count = 0;
+
+	auto& buffer_manager = state->db.instance->GetBufferManager();
+
+	while (std::chrono::steady_clock::now() - start < DURATION) {
+		state->conn.Query("BEGIN TRANSACTION");
 		auto val = state->data[i];
-		auto query_string = "SELECT i FROM t1 where i == " + std::to_string(val);
+		auto query_string = "SELECT t1.i FROM t1 where i == " + std::to_string(val);
 		state->result = state->conn.Query(query_string);
+		state->conn.Query("COMMIT");
+		i++;
+		transaction_count++;
+
+		if (std::chrono::steady_clock::now() - qps_start >= std::chrono::seconds(1)) {
+			size_t memory = buffer_manager.GetUsedMemory();
+			qps.emplace_back(transaction_count, memory);
+			transaction_count = 0;
+			qps_start = std::chrono::steady_clock::now();
+		}
+
+		if (i >= state->data.size()) {
+			i = 0;
+		}
 	}
-	state->conn.Query("COMMIT");
+
+	for (auto curr: qps) {
+		std::cout << curr.first << ", " << curr.second << std::endl;
+	}
 }
 
 string VerifyResult(QueryResult *result) override {
@@ -78,13 +106,39 @@ void Load(DuckDBBenchmarkState *state) override {
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
-	state->conn.Query("BEGIN TRANSACTION");
-	for (int i = 0; i < NUM_LOOKUPS; ++i) {
+	std::chrono::steady_clock::time_point start = std::chrono::steady_clock::now();
+	size_t i = 0;
+
+	std::chrono::steady_clock::time_point qps_start = std::chrono::steady_clock::now();
+	std::vector<std::pair<size_t, size_t>> qps;
+	size_t transaction_count = 0;
+
+	auto& buffer_manager = state->db.instance->GetBufferManager();
+
+	while (std::chrono::steady_clock::now() - start < DURATION) {
+		state->conn.Query("BEGIN TRANSACTION");
 		auto val = state->data[i];
 		auto query_string = "SELECT t1.i FROM t1 where i == " + std::to_string(val);
 		state->result = state->conn.Query(query_string);
+		state->conn.Query("COMMIT");
+		i++;
+		transaction_count++;
+
+		if (std::chrono::steady_clock::now() - qps_start >= std::chrono::seconds(1)) {
+			size_t memory = buffer_manager.GetUsedMemory();
+			qps.emplace_back(transaction_count, memory);
+			transaction_count = 0;
+			qps_start = std::chrono::steady_clock::now();
+		}
+
+		if (i >= state->data.size()) {
+			i = 0;
+		}
 	}
-	state->conn.Query("COMMIT");
+
+	for (auto curr: qps) {
+		std::cout << curr.first << ", " << curr.second << std::endl;
+	}
 }
 
 string VerifyResult(QueryResult *result) override {

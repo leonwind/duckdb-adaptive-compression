@@ -4,7 +4,6 @@
 #include "duckdb_benchmark_macro.hpp"
 #include "duckdb/storage/table/column_segment.hpp"
 #include "zipf.cpp"
-
 #include <iostream>
 
 using namespace duckdb;

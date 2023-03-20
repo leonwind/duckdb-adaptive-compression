@@ -173,8 +173,8 @@ void SuccinctScanAndCompact(ColumnSegment &segment, ColumnScanState &state, idx_
     	}
 	}
 
-	std::cout << "Searched min: " << min << ", Searched max: " << max << std::endl;
-	std::cout << "Stored min: " << segment.GetMinFactor() << ", Stored Max: " << segment.GetMax() - segment.GetMinFactor() << std::endl;
+	//std::cout << "Searched min: " << min << ", Searched max: " << max << std::endl;
+	//std::cout << "Stored min: " << segment.GetMinFactor() << ", Stored Max: " << segment.GetMax() - segment.GetMinFactor() << std::endl;
 	//segment.UpdateMinFactor(min);
 	min = segment.GetMinFactor();
 	max = segment.GetMax() - segment.GetMinFactor();
@@ -186,7 +186,7 @@ void SuccinctScanAndCompact(ColumnSegment &segment, ColumnScanState &state, idx_
     uint8_t old_width = segment.succinct_vec.width();
 
 	if (old_width <= min_width) {
-		std::cout << "Old width is smaller than min width: " << old_width << " <= " << min_width << std::endl;
+		//std::cout << "Old width is smaller than min width: " << old_width << " <= " << min_width << std::endl;
 		return SuccinctScanPartial<T>(segment, state, scan_count, result, /* result_offset= */ 0);
 	}
 
@@ -204,7 +204,7 @@ void SuccinctScanAndCompact(ColumnSegment &segment, ColumnScanState &state, idx_
 		if (i < scan_count) {
 			// Do actual scan and copy
 			auto entry_at_i = uint64_t(source[start + i]);
-			std::cout << "Entry at i: " << entry_at_i << ", min: " << min << std::endl;
+			//std::cout << "Entry at i: " << entry_at_i << ", min: " << min << std::endl;
 			memcpy(target_ptr + i * sizeof(T), &entry_at_i, sizeof(T));
 		}
 
@@ -221,11 +221,12 @@ void SuccinctScanAndCompact(ColumnSegment &segment, ColumnScanState &state, idx_
 
 	int64_t diff_size = size_before_compress - sdsl::size_in_bytes(source);
 	BufferManager::GetBufferManager(segment.db).AddToDataSize(-diff_size);
+	segment.SetBitCompressed();
 }
 
 template <class T>
 void SuccinctScan(ColumnSegment &segment, ColumnScanState &state, idx_t scan_count, Vector &result) {
-	if (segment.IsBitCompressed() || true) {
+	if (segment.IsBitCompressed()) {
 		SuccinctScanPartial<T>(segment, state, scan_count, result, /* result_offset= */ 0);
 	} else {
 		SuccinctScanAndCompact<T>(segment, state, scan_count, result, /* result_offset= */ 0);

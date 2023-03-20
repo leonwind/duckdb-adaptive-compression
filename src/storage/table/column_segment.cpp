@@ -149,6 +149,11 @@ void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &resul
 	if (succinct_possible) {
 		column_segment_catalog->AddReadAccess(this);
 	}
+
+	if (!compacted && !background_compaction_enabled) {
+		Compact();
+	}
+
 	//std::cout << "Scan at " << this << std::endl;
 	bit_compression_lock.lock();
 	function->scan_vector(*this, state, scan_count, result);
@@ -160,6 +165,11 @@ void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector
 	if (succinct_possible) {
 		column_segment_catalog->AddReadAccess(this);
 	}
+
+	if (!compacted && !background_compaction_enabled) {
+		Compact();
+	}
+
 	//std::cout << "Scan at " << this << std::endl;
 	bit_compression_lock.lock();
 	function->scan_partial(*this, state, scan_count, result, result_offset);
@@ -228,7 +238,9 @@ void ColumnSegment::Compact() {
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		size_t size_before_compress = sdsl::size_in_bytes(succinct_vec);
+
 		BitCompressFromSuccinct();
+
 		int64_t diff_size = size_before_compress - sdsl::size_in_bytes(succinct_vec);
 		BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
 		return;
@@ -280,6 +292,7 @@ void ColumnSegment::BitCompressFromSuccinct() {
         succinct_vec.bit_resize(count * min_width);
         succinct_vec.width(min_width);
     }
+	SetBitCompressed();
 }
 
 void ColumnSegment::BitCompressFromUncompressed() {

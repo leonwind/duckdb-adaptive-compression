@@ -36,8 +36,11 @@ def plot_qps_memory_over_time(qps_per_s, memory_per_s):
 
 
 if __name__ == "__main__":
-    non_succinct_data = read_file("data/non_adaptive_succinct_over_time.txt")
-    succinct_data = read_file("data/adaptive_succinct_over_time.txt")
-    
-    plot_qps_memory_over_time(succinct_data[0], succinct_data[1])
-    plot_qps_memory_over_time(non_succinct_data[0], non_succinct_data[1])
+    adaptive_succinct_data = read_file("data/adaptive_succinct_over_time.txt")
+    plot_qps_memory_over_time(adaptive_succinct_data[0], adaptive_succinct_data[1])
+
+    not_adaptive_succinct_data = read_file("data/not_adaptive_succinct_over_time.txt")
+    plot_qps_memory_over_time(not_adaptive_succinct_data[0], not_adaptive_succinct_data[1])
+
+    not_succinct_data = read_file("data/non_succinct_over_time.txt")
+    plot_qps_memory_over_time(not_succinct_data[0], not_succinct_data[1])

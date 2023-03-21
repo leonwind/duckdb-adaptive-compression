@@ -55,13 +55,11 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 		succinct_possible = true;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
 		block = buffer_manager.RegisterSmallMemory(0);
-	} else {
-		if (TypeIsInteger(type.InternalType()) && config.succinct_enabled) {
-			succinct_possible = true;
-		}
 
-		// std::cout << "Create UNCOMPRESSED transient segment with size "<< segment_size << std::endl;
+	} else {
+		succinct_possible = TypeIsInteger(type.InternalType()) && config.succinct_enabled;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_UNCOMPRESSED, type.InternalType());
+		// std::cout << "Create UNCOMPRESSED transient segment with size "<< segment_size << std::endl;
 
 		// transient: allocate a buffer for the uncompressed segment
 		if (segment_size < Storage::BLOCK_SIZE) {
@@ -111,8 +109,8 @@ ColumnSegment::ColumnSegment(ColumnSegment &other, idx_t start)
       block_id(other.block_id), offset(other.offset), segment_size(other.segment_size), num_elements(other.num_elements),
       segment_state(move(other.segment_state)), compacted(other.compacted),
       min_factor(other.min_factor), max_factor(other.max_factor),
-      column_segment_catalog(other.column_segment_catalog),
-      succinct_possible(other.succinct_possible) {
+      column_segment_catalog(other.column_segment_catalog), succinct_possible(other.succinct_possible),
+      background_compaction_enabled(other.background_compaction_enabled) {
 
 	succinct_vec = std::move(other.succinct_vec);
 	column_segment_catalog->AddColumnSegment(this);
@@ -154,11 +152,9 @@ void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &resul
 		Compact();
 	}
 
-	//std::cout << "Scan at " << this << std::endl;
 	bit_compression_lock.lock();
 	function->scan_vector(*this, state, scan_count, result);
 	bit_compression_lock.unlock();
-	//column_segment_catalog.Print();
 }
 
 void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset) {
@@ -170,11 +166,9 @@ void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector
 		Compact();
 	}
 
-	//std::cout << "Scan at " << this << std::endl;
 	bit_compression_lock.lock();
 	function->scan_partial(*this, state, scan_count, result, result_offset);
 	bit_compression_lock.unlock();
-	//column_segment_catalog.Print();
 }
 
 //===--------------------------------------------------------------------===//
@@ -223,11 +217,10 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 	idx_t copy_count = function->append(*state.append_state, *this, stats, append_data, offset, count);
 	num_elements += count;
 
-	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
-		if (num_elements >= succinct_vec.size()) {
-			Compact();
-		}
+	if (!compacted && !background_compaction_enabled && num_elements >= succinct_vec.size()) {
+		Compact();
 	}
+
 	return copy_count;
 }
 
@@ -247,7 +240,6 @@ void ColumnSegment::Compact() {
 	}
 
 	//! Segment was uncompressed transient and now gets compacted using a succinct representation.
-
 	succinct_vec.width(type_size * 8);
 	succinct_vec.resize(segment_size / type_size);
 
@@ -273,6 +265,7 @@ void ColumnSegment::BitCompressFromSuccinct() {
 		min_width = ((min_width + 7) & (-8));
 		//std::cout << "Padded min width: " << (unsigned) min_width << std::endl;
 	}
+
     uint8_t old_width = succinct_vec.width();
 
     if (old_width > min_width) {
@@ -317,6 +310,7 @@ void ColumnSegment::BitCompressFromUncompressed() {
 		min_width = ((min_width + 7) & (-8));
 		//std::cout << "Padded min width: " << (unsigned) min_width << std::endl;
 	}
+
     uint8_t old_width = succinct_vec.width();
 	//std::cout << "Compact with min " << min << std::endl;
     if (old_width > min_width) {

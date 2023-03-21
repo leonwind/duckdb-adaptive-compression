@@ -12,7 +12,7 @@ using namespace duckdb;
 #define NUM_INSERTS 10000000 // 10 Million
 #define NUM_LOOKUPS 1000000 // 1 Million
 #define ZIPF_K 1
-#define DURATION std::chrono::seconds(10)
+#define DURATION std::chrono::seconds(60)
 
 DUCKDB_BENCHMARK(SuccinctZipfDistributionOverTime, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {

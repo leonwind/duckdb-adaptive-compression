@@ -1,0 +1,2 @@
+cd build/
+cmake -DBUILD_BENCHMARKS=1 -DBUILD_TPCH_EXTENSION=1 -GNinja -DCMAKE_BUILD_TYPE=Release ..

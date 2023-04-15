@@ -251,8 +251,10 @@ void ColumnSegment::Compact() {
 
 	BufferManager::GetBufferManager(db).Unpin(block);
 
-	int64_t diff_size = size_before_compress - sdsl::size_in_bytes(succinct_vec);
+	idx_t size_after_compress = sdsl::size_in_bytes(succinct_vec);
+	int64_t diff_size = size_before_compress - size_after_compress;
 	BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
+	segment_size = size_after_compress;
 }
 
 void ColumnSegment::BitCompressFromSuccinct() {

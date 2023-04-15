@@ -1,7 +1,9 @@
 #pragma once
 
-#include <unordered_map>
+#include "duckdb.h"
+
 #include <atomic>
+#include <unordered_map>
 
 namespace duckdb {
 class ColumnSegment;

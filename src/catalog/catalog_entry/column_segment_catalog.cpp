@@ -62,7 +62,7 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 			}
 
 			cum_sum += iter->second.num_reads;
-			if (cum_sum / curr_counter < 0.7) {
+			if (cum_sum / curr_counter < 0.9) {
 				iter->first->Compact();
 			} else {
 				finished = true;
@@ -70,8 +70,10 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 			}
 		}
 	}
+	//Print();
 
-	while (true && false) {
+	while (true) {
+		//break;
 		Print();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
@@ -79,22 +81,23 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 
 
 void ColumnSegmentCatalog::Print() {
-	std::vector<std::pair<ColumnSegment*, AccessStatistics>> v(statistics.begin(), statistics.end());
-
-	std::sort(v.begin(), v.end(),
-	          [](std::pair<ColumnSegment*, AccessStatistics>& left,
-	             std::pair<ColumnSegment*, AccessStatistics>& right) {
-		          std::cout << "Left: " << left.second.num_reads << ", Right: " << right.second.num_reads << std::endl;
-		          // Sort descending
-		          return !(left.second < right.second);
-	          });
-
 	idx_t curr_counter{event_counter};
+	std::vector<std::pair<ColumnSegment*, AccessStatistics>> v(statistics.begin(), statistics.end());
+	std::sort(v.begin(), v.end(),
+			  [](std::pair<ColumnSegment*, AccessStatistics>& left,
+				 std::pair<ColumnSegment*, AccessStatistics>& right) {
+				  return left.second < right.second;
+			  });
+
 	for (auto& curr : v) {
 		std::cout << curr.first << ": "
 		          << curr.second.num_reads << "/" << curr_counter
-		          << ", compacted: "  << curr.first->IsBitCompressed() << std::endl;
+		          << ", compacted: "  << curr.first->IsBitCompressed()
+		          << ", size: " << curr.first->SegmentSize()
+		          << std::endl;
 	}
+
+	std::cout << "######" << std::endl;
 }
 
 } // namespace duckdb

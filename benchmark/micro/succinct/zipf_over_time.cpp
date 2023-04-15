@@ -9,14 +9,15 @@
 
 using namespace duckdb;
 
-#define NUM_INSERTS 10000000 // 10 Million
+#define NUM_INSERTS 100000000 // 10 Million
 #define NUM_LOOKUPS 1000000 // 1 Million
-#define ZIPF_K 1
-#define DURATION std::chrono::seconds(60)
+#define ZIPF_K 3
+#define DURATION std::chrono::seconds(20)
 
 DUCKDB_BENCHMARK(SuccinctZipfDistributionOverTime, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
 	state->db.instance->config.adaptive_succinct_compression_enabled = true;
+	state->conn.Query("SET threads TO 4;");
 	state->conn.Query("CREATE TABLE t1(i UINTEGER);");
 
 	Appender appender(state->conn, "t1");
@@ -30,9 +31,28 @@ void Load(DuckDBBenchmarkState *state) override {
 	std::random_device rd{};
     std::mt19937 gen{rd()};
 	Zipf<uint32_t, double> zipf(NUM_INSERTS, ZIPF_K);
+	std::unordered_map<uint32_t, uint32_t> frequencies;
 	for (int i = 0; i < NUM_LOOKUPS; ++i) {
-		state->data.push_back(uint32_t(std::round(zipf(gen))));
+		uint32_t curr = uint32_t(std::round(zipf(gen)));
+		state->data.push_back(curr);
+		if (frequencies.find(curr) == frequencies.end()) {
+			frequencies[curr] = 1;
+		} else {
+			frequencies[curr] += 1;
+		}
 	}
+
+	std::vector<std::pair<uint32_t, uint32_t>> v(frequencies.begin(), frequencies.end());
+		std::sort(v.begin(), v.end(),
+				  [](std::pair<uint32_t, uint32_t>& left,
+					 std::pair<uint32_t, uint32_t>& right) {
+					  return left.second < right.second;
+				  });
+
+	for (auto& it: v) {
+		std::cout << it.first << ": " << it.second << std::endl;
+	}
+
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
@@ -67,7 +87,8 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 	}
 
 	for (auto curr: qps) {
-		std::cout << curr.first << ", " << curr.second << std::endl;
+		std::cout << /* qps= */ curr.first << ", "
+		          << /* memory= */ curr.second << std::endl;
 	}
 }
 
@@ -207,7 +228,8 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 	}
 
 	for (auto curr: qps) {
-		std::cout << curr.first << ", " << curr.second << std::endl;
+		std::cout << /* qps= */ curr.first << ", "
+		          << /* memory= */ curr.second << std::endl;
 	}
 }
 

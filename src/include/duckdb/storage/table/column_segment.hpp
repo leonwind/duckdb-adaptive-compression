@@ -155,7 +155,13 @@ public:
 		compacted = true;
 	}
 
+	void SetBitUncompressed() {
+		compacted = false;
+	}
+
 	void Compact();
+
+	void Uncompact();
 
 public:
 	ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block, LogicalType type, ColumnSegmentType segment_type,
@@ -171,6 +177,7 @@ private:
 
 	void BitCompressFromSuccinct();
 	void BitCompressFromUncompressed();
+	void UncompressSuccinct();
 
 private:
 	idx_t num_elements;

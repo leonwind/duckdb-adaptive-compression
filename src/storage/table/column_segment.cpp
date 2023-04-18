@@ -232,7 +232,9 @@ void ColumnSegment::Compact() {
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		size_t size_before_compress = sdsl::size_in_bytes(succinct_vec);
 
+		bit_compression_lock.lock();
 		BitCompressFromSuccinct();
+		bit_compression_lock.unlock();
 
 		int64_t diff_size = size_before_compress - sdsl::size_in_bytes(succinct_vec);
 		BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
@@ -255,6 +257,16 @@ void ColumnSegment::Compact() {
 	int64_t diff_size = size_before_compress - size_after_compress;
 	BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
 	segment_size = size_after_compress;
+}
+
+void ColumnSegment::Uncompact() {
+	if (!compacted || function->type != CompressionType::COMPRESSION_SUCCINCT) {
+		return;
+	}
+
+	bit_compression_lock.lock();
+	UncompressSuccinct();
+	bit_compression_lock.unlock();
 }
 
 void ColumnSegment::BitCompressFromSuccinct() {
@@ -344,8 +356,23 @@ void ColumnSegment::BitCompressFromUncompressed() {
     }
 
 	function = DBConfig::GetConfig(db).GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
+	function->type = CompressionType::COMPRESSION_SUCCINCT;
 	SetBitCompressed();
-	//std::cout << "Finished compression, after unlock" << std::endl;
+}
+
+void ColumnSegment::UncompressSuccinct() {
+	Resize(segment_size);
+	auto handle = BufferManager::GetBufferManager(db).Pin(block);
+	uint8_t* data_ptr = handle.Ptr();
+
+	for (size_t i = 0; i < succinct_vec.size(); ++i) {
+		data_ptr[i] = succinct_vec[i];
+	}
+
+	succinct_vec.resize(0);
+	SetBitUncompressed();
+	function = DBConfig::GetConfig(db).GetCompressionFunction(CompressionType::COMPRESSION_UNCOMPRESSED, type.InternalType());
+	function->type = CompressionType::COMPRESSION_UNCOMPRESSED;
 }
 
 idx_t ColumnSegment::FinalizeAppend(ColumnAppendState &state) {
@@ -353,7 +380,6 @@ idx_t ColumnSegment::FinalizeAppend(ColumnAppendState &state) {
 	if (!function->finalize_append) {
 		throw InternalException("Attempting to call FinalizeAppend on a segment without a finalize_append method");
 	}
-	//std::cout << "Finalize append" << std::endl;
 	auto result_count = function->finalize_append(*this, stats);
 	state.append_state.reset();
 	return result_count;

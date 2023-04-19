@@ -148,6 +148,8 @@ void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &resul
 		column_segment_catalog->AddReadAccess(this);
 	}
 
+	std::cout << "Scan" << std::endl;
+	std::cout << "background compaction enabled: " << background_compaction_enabled << std::endl;
 	if (!compacted && !background_compaction_enabled) {
 		Compact();
 	}
@@ -162,9 +164,12 @@ void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector
 		column_segment_catalog->AddReadAccess(this);
 	}
 
+	std::cout << "Scan partial" << std::endl;
+	std::cout << "background compaction enabled: " << background_compaction_enabled << std::endl;
 	if (!compacted && !background_compaction_enabled) {
 		Compact();
 	}
+	std::cout << "Finished compacting - uncompacting" << std::endl;
 
 	bit_compression_lock.lock();
 	function->scan_partial(*this, state, scan_count, result, result_offset);
@@ -225,11 +230,14 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 }
 
 void ColumnSegment::Compact() {
+	std::cout << "Compact now" << std::endl;
 	if (compacted || num_elements == 0 || !succinct_possible) {
 		return;
 	}
+	std::cout << "Compact possible" << std::endl;
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
+		std::cout << "Type is succinct" << std::endl;
 		size_t size_before_compress = sdsl::size_in_bytes(succinct_vec);
 
 		bit_compression_lock.lock();
@@ -238,6 +246,8 @@ void ColumnSegment::Compact() {
 
 		int64_t diff_size = size_before_compress - sdsl::size_in_bytes(succinct_vec);
 		BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
+		std::cout << "Compacted" << std::endl;
+		Uncompact();
 		return;
 	}
 
@@ -257,15 +267,18 @@ void ColumnSegment::Compact() {
 	int64_t diff_size = size_before_compress - size_after_compress;
 	BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
 	segment_size = size_after_compress;
+	std::cout << "COMPACTED" << std::endl;
 }
 
 void ColumnSegment::Uncompact() {
+	std::cout << "Start uncompacting" << std::endl;
 	if (!compacted || function->type != CompressionType::COMPRESSION_SUCCINCT) {
 		return;
 	}
 
 	bit_compression_lock.lock();
 	UncompressSuccinct();
+	std::cout << "Finished uncompressing" << std::endl;
 	bit_compression_lock.unlock();
 }
 
@@ -361,13 +374,28 @@ void ColumnSegment::BitCompressFromUncompressed() {
 }
 
 void ColumnSegment::UncompressSuccinct() {
-	Resize(segment_size);
-	auto handle = BufferManager::GetBufferManager(db).Pin(block);
+	std::cout << "Start uncompressing succinct" << std::endl;
+	std::cout << "Segment size: " << segment_size << std::endl;
+
+	auto &buffer_manager = BufferManager::GetBufferManager(db);
+	shared_ptr<BlockHandle> new_block = buffer_manager.RegisterSmallMemory(segment_size);
+
+	//auto handle = buffer_manager.Allocate(segment_size, false, &new_block);
+	this->block_id = new_block->BlockId();
+	this->block = move(new_block);
+	std::cout << "Block address: " << block.get() << std::endl;
+
+	auto handle = buffer_manager.Pin(block);
+	std::cout << "Got handle" << std::endl;
 	uint8_t* data_ptr = handle.Ptr();
 
 	for (size_t i = 0; i < succinct_vec.size(); ++i) {
-		data_ptr[i] = succinct_vec[i];
+		std::cout << "get i at " << i << " with value " << succinct_vec[i] << std::endl;
+		data_ptr[i] = succinct_vec[i] + GetMinFactor();
+		std::cout << "set to value " << unsigned(data_ptr[i]) << std::endl;
 	}
+	buffer_manager.Unpin(block);
+	std::cout << "After setting-loop" << std::endl;
 
 	succinct_vec.resize(0);
 	SetBitUncompressed();

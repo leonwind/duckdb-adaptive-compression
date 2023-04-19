@@ -123,6 +123,7 @@ struct FixedSizeScanState : public SegmentScanState {
 };
 
 unique_ptr<SegmentScanState> FixedSizeInitScan(ColumnSegment &segment) {
+	std::cout << "INIT FIXED SIZE SCAN" << std::endl;
 	auto result = make_unique<FixedSizeScanState>();
 	auto &buffer_manager = BufferManager::GetBufferManager(segment.db);
 	result->handle = buffer_manager.Pin(segment.block);
@@ -135,14 +136,29 @@ unique_ptr<SegmentScanState> FixedSizeInitScan(ColumnSegment &segment) {
 template <class T>
 void FixedSizeScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t scan_count, Vector &result,
                           idx_t result_offset) {
+	std::cout << "Fixed size uncompressed partial scan" << std::endl;
+
 	auto &scan_state = (FixedSizeScanState &)*state.scan_state;
 	auto start = segment.GetRelativeIndex(state.row_index);
 
-	auto data = scan_state.handle.Ptr() + segment.GetBlockOffset();
+	auto &buffer_manager = BufferManager::GetBufferManager(segment.db);
+	auto handle = buffer_manager.Pin(segment.block);
+	auto data = handle.Ptr() + segment.GetBlockOffset();
+	//auto data = scan_state.handle.Ptr() + segment.GetBlockOffset();
+	std::cout << "Data ptr: " << handle.Ptr() << std::endl;
 	auto source_data = data + start * sizeof(T);
+
 
 	// copy the data from the base table
 	result.SetVectorType(VectorType::FLAT_VECTOR);
+	std::cout << "Scan count: " << scan_count << std::endl;
+	std::cout << "Start: " << start << std::endl;
+
+	for (size_t i = 0; i < 9; ++i) {
+		std::cout << "entry at i=" << i << ": " << unsigned(source_data[i]) << std::endl;
+	}
+
+	std::cout << "BEFORE memcpy" << std::endl;
 	memcpy(FlatVector::GetData(result) + result_offset * sizeof(T), source_data, scan_count * sizeof(T));
 }
 

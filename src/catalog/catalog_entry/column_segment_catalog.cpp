@@ -59,6 +59,8 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 					  return left.second < right.second;
 				  });
 
+		Print();
+
 		float cum_sum = 0;
 		for (auto iter = v.begin(); iter != v.end(); iter++) {
 			cum_sum += iter->second.num_reads;
@@ -72,8 +74,11 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 			}
 
 			// Reset statistics to store only access patterns since last compacting iteration.
-			iter->second.num_reads = 0;
+			statistics[iter->first].num_reads = 0;
+			//iter->second.num_reads = 0;
 		}
+
+		event_counter = 0;
 	}
 
 	//Print();
@@ -100,6 +105,7 @@ void ColumnSegmentCatalog::Print() {
 		          << curr.second.num_reads << "/" << curr_counter
 		          << ", compacted: "  << curr.first->IsBitCompressed()
 		          << ", size: " << curr.first->SegmentSize()
+		          << ", stats: " << curr.first->stats.statistics->ToString()
 		          << std::endl;
 	}
 

@@ -202,6 +202,9 @@ private:
 	std::mutex bit_compression_lock;
 	//! If background (adaptive) compaction is enabled or if we need to compact ourselves.
 	bool background_compaction_enabled;
+	//! If the scan state needs to be reinitialized due to switching from compacted to uncompacted
+	//! representation.
+	bool force_reinitializing_scan_state;
 };
 
 } // namespace duckdb

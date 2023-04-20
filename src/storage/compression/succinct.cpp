@@ -229,6 +229,7 @@ void SuccinctScan(ColumnSegment &segment, ColumnScanState &state, idx_t scan_cou
 	if (segment.IsBitCompressed()) {
 		SuccinctScanPartial<T>(segment, state, scan_count, result, /* result_offset= */ 0);
 	} else {
+		std::cout << "IS NOT BIT COMPRESSED" << std::endl;
 		SuccinctScanAndCompact<T>(segment, state, scan_count, result, /* result_offset= */ 0);
 	}
 }

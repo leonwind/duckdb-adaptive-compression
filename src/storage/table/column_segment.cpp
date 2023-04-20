@@ -290,6 +290,7 @@ void ColumnSegment::Uncompact() {
 }
 
 void ColumnSegment::BitCompressFromSuccinct() {
+	std::cout << "Start bit compressing from succinct" << std::endl;
 	//std::cout << "Updated min: " << GetMinFactor() << ", Updated max: " << GetMax() << std::endl;
 	uint64_t min = GetMinFactor();
 	uint64_t max = GetMax() - GetMinFactor();
@@ -320,9 +321,11 @@ void ColumnSegment::BitCompressFromSuccinct() {
         succinct_vec.width(min_width);
     }
 	SetBitCompressed();
+	std::cout << "End bit compressing from succinct" << std::endl;
 }
 
 void ColumnSegment::BitCompressFromUncompressed() {
+	std::cout << "Start bit compressing from uncompressed" << std::endl;
 	//std::cout << "Before lock" << std::endl;
 
 	auto old_handle = BufferManager::GetBufferManager(db).Pin(block);
@@ -378,9 +381,11 @@ void ColumnSegment::BitCompressFromUncompressed() {
 	function = DBConfig::GetConfig(db).GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
 	function->type = CompressionType::COMPRESSION_SUCCINCT;
 	SetBitCompressed();
+	std::cout << "End bit compressing from uncompressed" << std::endl;
 }
 
 void ColumnSegment::UncompressSuccinct() {
+	std::cout << "Start uncompressing" << std::endl;
 	auto &buffer_manager = BufferManager::GetBufferManager(db);
 	shared_ptr<BlockHandle> new_block = buffer_manager.RegisterSmallMemory(segment_size);
 
@@ -395,12 +400,13 @@ void ColumnSegment::UncompressSuccinct() {
 		uint64_t curr = succinct_vec[i] + GetMinFactor();
 		memcpy(data_ptr + i * type_size, &curr, type_size);
 	}
-	buffer_manager.Unpin(block);
+	//buffer_manager.Unpin(block);
 
 	succinct_vec.resize(0);
-	SetBitUncompressed();
 	function = DBConfig::GetConfig(db).GetCompressionFunction(CompressionType::COMPRESSION_UNCOMPRESSED, type.InternalType());
 	function->type = CompressionType::COMPRESSION_UNCOMPRESSED;
+	SetBitUncompressed();
+	std::cout << "End uncompressing" << std::endl;
 }
 
 idx_t ColumnSegment::FinalizeAppend(ColumnAppendState &state) {

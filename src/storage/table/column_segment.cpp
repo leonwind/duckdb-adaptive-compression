@@ -250,7 +250,6 @@ void ColumnSegment::Compact() {
 
 		int64_t diff_size = size_before_compress - sdsl::size_in_bytes(succinct_vec);
 		BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
-		Uncompact();
 		return;
 	}
 
@@ -277,10 +276,17 @@ void ColumnSegment::Uncompact() {
 		return;
 	}
 
+	size_t compressed_size = sdsl::size_in_bytes(succinct_vec);
+
 	bit_compression_lock.lock();
 	UncompressSuccinct();
 	bit_compression_lock.unlock();
 	force_reinitializing_scan_state = true;
+
+	// TODO: Check if that makes sense and check in #UncompressSuccinct how much to allocate.
+	size_t uncompressed_size = segment_size < Storage::BLOCK_SIZE ? segment_size : Storage::BLOCK_SIZE;
+	int64_t diff_size = uncompressed_size - compressed_size;
+	BufferManager::GetBufferManager(db).AddToDataSize(diff_size);
 }
 
 void ColumnSegment::BitCompressFromSuccinct() {

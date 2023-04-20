@@ -155,7 +155,13 @@ public:
 		compacted = true;
 	}
 
+	void SetBitUncompressed() {
+		compacted = false;
+	}
+
 	void Compact();
+
+	void Uncompact();
 
 public:
 	ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block, LogicalType type, ColumnSegmentType segment_type,
@@ -171,6 +177,7 @@ private:
 
 	void BitCompressFromSuccinct();
 	void BitCompressFromUncompressed();
+	void UncompressSuccinct();
 
 private:
 	idx_t num_elements;
@@ -195,6 +202,9 @@ private:
 	std::mutex bit_compression_lock;
 	//! If background (adaptive) compaction is enabled or if we need to compact ourselves.
 	bool background_compaction_enabled;
+	//! If the scan state needs to be reinitialized due to switching from compacted to uncompacted
+	//! representation.
+	bool force_reinitializing_scan_state;
 };
 
 } // namespace duckdb

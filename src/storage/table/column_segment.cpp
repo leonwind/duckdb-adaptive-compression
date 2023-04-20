@@ -88,7 +88,8 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
       block_id(block_id_p), offset(offset_p), segment_size(segment_size_p),
       num_elements(0), min_factor(UINT64_MAX), max_factor(0), compacted(false),
       succinct_possible(succinct_possible), background_compaction_enabled(background_compaction_enabled),
-      column_segment_catalog(Catalog::GetSystemCatalog(db).GetColumnSegmentCatalog()) {
+      column_segment_catalog(Catalog::GetSystemCatalog(db).GetColumnSegmentCatalog()),
+      force_reinitializing_scan_state(false) {
 	D_ASSERT(function);
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
@@ -110,7 +111,8 @@ ColumnSegment::ColumnSegment(ColumnSegment &other, idx_t start)
       segment_state(move(other.segment_state)), compacted(other.compacted),
       min_factor(other.min_factor), max_factor(other.max_factor),
       column_segment_catalog(other.column_segment_catalog), succinct_possible(other.succinct_possible),
-      background_compaction_enabled(other.background_compaction_enabled) {
+      background_compaction_enabled(other.background_compaction_enabled),
+      force_reinitializing_scan_state(other.force_reinitializing_scan_state) {
 
 	succinct_vec = std::move(other.succinct_vec);
 	column_segment_catalog->AddColumnSegment(this);
@@ -152,6 +154,11 @@ void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &resul
 		Compact();
 	}
 
+	if (force_reinitializing_scan_state) {
+		InitializeScan(state);
+		force_reinitializing_scan_state = false;
+	}
+
 	bit_compression_lock.lock();
 	function->scan_vector(*this, state, scan_count, result);
 	bit_compression_lock.unlock();
@@ -164,6 +171,11 @@ void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector
 
 	if (!compacted && !background_compaction_enabled) {
 		Compact();
+	}
+
+	if (force_reinitializing_scan_state) {
+		InitializeScan(state);
+		force_reinitializing_scan_state = false;
 	}
 
 	bit_compression_lock.lock();
@@ -232,7 +244,9 @@ void ColumnSegment::Compact() {
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		size_t size_before_compress = sdsl::size_in_bytes(succinct_vec);
 
+		bit_compression_lock.lock();
 		BitCompressFromSuccinct();
+		bit_compression_lock.unlock();
 
 		int64_t diff_size = size_before_compress - sdsl::size_in_bytes(succinct_vec);
 		BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
@@ -255,6 +269,24 @@ void ColumnSegment::Compact() {
 	int64_t diff_size = size_before_compress - size_after_compress;
 	BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
 	segment_size = size_after_compress;
+}
+
+void ColumnSegment::Uncompact() {
+	if (!compacted || function->type != CompressionType::COMPRESSION_SUCCINCT) {
+		return;
+	}
+
+	size_t compressed_size = sdsl::size_in_bytes(succinct_vec);
+
+	bit_compression_lock.lock();
+	UncompressSuccinct();
+	bit_compression_lock.unlock();
+	force_reinitializing_scan_state = true;
+
+	// TODO: Check if that makes sense and check in #UncompressSuccinct how much to allocate.
+	size_t uncompressed_size = segment_size < Storage::BLOCK_SIZE ? segment_size : Storage::BLOCK_SIZE;
+	int64_t diff_size = uncompressed_size - compressed_size;
+	BufferManager::GetBufferManager(db).AddToDataSize(diff_size);
 }
 
 void ColumnSegment::BitCompressFromSuccinct() {
@@ -344,8 +376,31 @@ void ColumnSegment::BitCompressFromUncompressed() {
     }
 
 	function = DBConfig::GetConfig(db).GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
+	function->type = CompressionType::COMPRESSION_SUCCINCT;
 	SetBitCompressed();
-	//std::cout << "Finished compression, after unlock" << std::endl;
+}
+
+void ColumnSegment::UncompressSuccinct() {
+	auto &buffer_manager = BufferManager::GetBufferManager(db);
+	shared_ptr<BlockHandle> new_block = buffer_manager.RegisterSmallMemory(segment_size);
+
+	//auto handle = buffer_manager.Allocate(segment_size, false, &new_block);
+	this->block_id = new_block->BlockId();
+	this->block = move(new_block);
+
+	auto handle = buffer_manager.Pin(block);
+	uint8_t* data_ptr = handle.Ptr();
+
+	for (size_t i = 0; i < succinct_vec.size(); ++i) {
+		uint64_t curr = succinct_vec[i] + GetMinFactor();
+		memcpy(data_ptr + i * type_size, &curr, type_size);
+	}
+	buffer_manager.Unpin(block);
+
+	succinct_vec.resize(0);
+	SetBitUncompressed();
+	function = DBConfig::GetConfig(db).GetCompressionFunction(CompressionType::COMPRESSION_UNCOMPRESSED, type.InternalType());
+	function->type = CompressionType::COMPRESSION_UNCOMPRESSED;
 }
 
 idx_t ColumnSegment::FinalizeAppend(ColumnAppendState &state) {
@@ -353,7 +408,6 @@ idx_t ColumnSegment::FinalizeAppend(ColumnAppendState &state) {
 	if (!function->finalize_append) {
 		throw InternalException("Attempting to call FinalizeAppend on a segment without a finalize_append method");
 	}
-	//std::cout << "Finalize append" << std::endl;
 	auto result_count = function->finalize_append(*this, stats);
 	state.append_state.reset();
 	return result_count;

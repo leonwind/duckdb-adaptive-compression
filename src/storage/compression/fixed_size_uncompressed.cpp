@@ -135,6 +135,7 @@ unique_ptr<SegmentScanState> FixedSizeInitScan(ColumnSegment &segment) {
 template <class T>
 void FixedSizeScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t scan_count, Vector &result,
                           idx_t result_offset) {
+
 	auto &scan_state = (FixedSizeScanState &)*state.scan_state;
 	auto start = segment.GetRelativeIndex(state.row_index);
 

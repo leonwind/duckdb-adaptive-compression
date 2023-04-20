@@ -18,7 +18,7 @@ using namespace duckdb;
 DUCKDB_BENCHMARK(SuccinctZipfChangingOverTime, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
 	state->db.instance->config.adaptive_succinct_compression_enabled = true;
-	state->conn.Query("SET threads TO 4;");
+	//state->conn.Query("SET threads TO 4;");
 	state->conn.Query("CREATE TABLE t1(i UINTEGER);");
 
 	Appender appender(state->conn, "t1");
@@ -72,9 +72,7 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 		auto val = state->data[i];
 
 		if (std::chrono::steady_clock::now() - start >= DISTRIBUTION_CHANGE) {
-			val = NUM_INSERTS - 10;
-		} else {
-			val = 3;
+			val += NUM_INSERTS / 2;
 		}
 
 		auto query_string = "SELECT t1.i FROM t1 where i == " + std::to_string(val);

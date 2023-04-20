@@ -25,7 +25,7 @@ public:
 	void AddReadAccess(ColumnSegment* segment);
 	void Print();
 
-	void CompressLowestKSegments();
+	[[noreturn]] void CompressLowestKSegments();
 
 	inline void EnableBackgroundThreadCompaction() {
 		background_compaction_enabled = true;

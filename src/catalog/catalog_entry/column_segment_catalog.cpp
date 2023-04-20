@@ -40,8 +40,10 @@ void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 }
 
 void ColumnSegmentCatalog::CompressLowestKSegments() {
-	bool finished = false;
-	while (!finished) {
+	double compression_rate = 0.9;
+	//bool finished = false;
+
+	while (true) {
 		std::this_thread::sleep_for(std::chrono::seconds(10));
 
 		//std::cout << "Event counter: " << event_counter << std::endl;
@@ -59,19 +61,21 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 
 		float cum_sum = 0;
 		for (auto iter = v.begin(); iter != v.end(); iter++) {
-			if (iter->first->IsBitCompressed()) {
-				continue;
-			}
-
 			cum_sum += iter->second.num_reads;
-			if (cum_sum / curr_counter < 0.9) {
+
+			if (cum_sum / curr_counter < compression_rate) {
+				// Compact all the least accessed segments with a ratio of #compression_rate.
 				iter->first->Compact();
 			} else {
-				finished = true;
-				break;
+				// Uncompact / leave uncompressed all frequently accessed segments.
+				iter->first->Uncompact();
 			}
+
+			// Reset statistics to store only access patterns since last compacting iteration.
+			iter->second.num_reads = 0;
 		}
 	}
+
 	//Print();
 
 	while (true && false) {

@@ -391,7 +391,9 @@ void ColumnSegment::UncompressSuccinct() {
 
 	for (size_t i = 0; i < succinct_vec.size(); ++i) {
 		std::cout << "get i at " << i << " with value " << succinct_vec[i] << std::endl;
-		data_ptr[i] = succinct_vec[i] + GetMinFactor();
+		uint64_t curr = succinct_vec[i] + GetMinFactor();
+		memcpy(data_ptr + i * type_size, &curr, type_size);
+		//data_ptr[i] = succinct_vec[i] + GetMinFactor();
 		std::cout << "set to value " << unsigned(data_ptr[i]) << std::endl;
 	}
 	buffer_manager.Unpin(block);

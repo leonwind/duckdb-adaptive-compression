@@ -42,6 +42,7 @@ void Load(DuckDBBenchmarkState *state) override {
 		}
 	}
 
+	/*
 	std::vector<std::pair<uint32_t, uint32_t>> v(frequencies.begin(), frequencies.end());
 		std::sort(v.begin(), v.end(),
 				  [](std::pair<uint32_t, uint32_t>& left,
@@ -52,7 +53,7 @@ void Load(DuckDBBenchmarkState *state) override {
 	for (auto& it: v) {
 		std::cout << it.first << ": " << it.second << std::endl;
 	}
-
+	*/
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {

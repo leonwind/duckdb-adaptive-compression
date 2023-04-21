@@ -28,9 +28,11 @@ void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 
 	if (statistics.find(segment) == statistics.end() || segment == nullptr) {
 		//statistics[segment] = AccessStatistics{/* num_reads= */ 1};
+		/*
 		if (segment->succinct_possible) {
 			std::cout << "SHOULD NEVER HAPPEN NOW???" << std::endl;
 		}
+		 */
 	} else {
 		statistics[segment].num_reads++;
 		event_counter++;
@@ -72,7 +74,7 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 	}
 	//Print();
 
-	while (true) {
+	while (true && false) {
 		//break;
 		Print();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));

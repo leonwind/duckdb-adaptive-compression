@@ -12,12 +12,12 @@ using namespace duckdb;
 #define NUM_INSERTS 100000000 // 10 Million
 #define NUM_LOOKUPS 1000000 // 1 Million
 #define ZIPF_K 3
-#define DURATION std::chrono::seconds(20)
+#define DURATION std::chrono::seconds(60)
 
 DUCKDB_BENCHMARK(SuccinctZipfDistributionOverTime, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
 	state->db.instance->config.adaptive_succinct_compression_enabled = true;
-	state->conn.Query("SET threads TO 4;");
+	state->conn.Query("SET threads TO 8;");
 	state->conn.Query("CREATE TABLE t1(i UINTEGER);");
 
 	Appender appender(state->conn, "t1");
@@ -42,6 +42,7 @@ void Load(DuckDBBenchmarkState *state) override {
 		}
 	}
 
+	/*
 	std::vector<std::pair<uint32_t, uint32_t>> v(frequencies.begin(), frequencies.end());
 		std::sort(v.begin(), v.end(),
 				  [](std::pair<uint32_t, uint32_t>& left,
@@ -52,7 +53,7 @@ void Load(DuckDBBenchmarkState *state) override {
 	for (auto& it: v) {
 		std::cout << it.first << ": " << it.second << std::endl;
 	}
-
+	*/
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
@@ -107,6 +108,7 @@ FINISH_BENCHMARK(SuccinctZipfDistributionOverTime)
 
 DUCKDB_BENCHMARK(SuccinctNotAdaptiveZipfDistributionOverTime, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
+	state->conn.Query("SET threads TO 8;");
 	state->conn.Query("CREATE TABLE t1(i UINTEGER);");
 
 	Appender appender(state->conn, "t1");
@@ -177,6 +179,7 @@ FINISH_BENCHMARK(SuccinctNotAdaptiveZipfDistributionOverTime)
 
 DUCKDB_BENCHMARK(NonSuccinctZipfDistributionOverTime, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
+	state->conn.Query("SET threads TO 8;");
 	state->db.instance->config.succinct_enabled = false;
 
 	state->conn.Query("CREATE TABLE t1(i UINTEGER);");

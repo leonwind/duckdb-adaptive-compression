@@ -63,10 +63,18 @@ void Catalog::Initialize(bool load_builtin) {
 	}
 
 	column_segment_catalog = std::move(ColumnSegmentCatalog());
-	column_segment_catalog.EnableBackgroundThreadCompaction();
-
 	Verify();
 }
+
+ColumnSegmentCatalog* Catalog::GetColumnSegmentCatalog() {
+	if (!column_segment_catalog.BackgroundCompactionEnabled() &&
+	    DBConfig::GetConfig(db.GetDatabase()).adaptive_succinct_compression_enabled) {
+		column_segment_catalog.EnableBackgroundThreadCompaction();
+	}
+
+	return &column_segment_catalog;
+}
+
 
 DatabaseInstance &Catalog::GetDatabase() {
 	return db.GetDatabase();

@@ -42,11 +42,12 @@ void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 void ColumnSegmentCatalog::CompressLowestKSegments() {
 	double compression_rate = 0.9;
 	//bool finished = false;
+	//size_t i = 0;
+	std::cout << "Start background compaction" << std::endl;
 
 	while (true) {
 		std::this_thread::sleep_for(std::chrono::seconds(10));
 
-		//std::cout << "Event counter: " << event_counter << std::endl;
 		if (event_counter < 50000) {
 			continue;
 		}
@@ -59,7 +60,7 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 					  return left.second < right.second;
 				  });
 
-		Print();
+		//Print();
 
 		float cum_sum = 0;
 		for (auto iter = v.begin(); iter != v.end(); iter++) {

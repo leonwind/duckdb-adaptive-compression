@@ -36,11 +36,21 @@ def plot_qps_memory_over_time(qps_per_s, memory_per_s):
 
 
 if __name__ == "__main__":
-    adaptive_succinct_data = read_file("data/succinct_over_time_large.txt")
+    adaptive_succinct_data = read_file("../build/changing_distribution.log")
     plot_qps_memory_over_time(adaptive_succinct_data[0], adaptive_succinct_data[1])
 
-    not_adaptive_succinct_data = read_file("data/succinct_not_adaptive_over_time_large.txt")
-    plot_qps_memory_over_time(not_adaptive_succinct_data[0], not_adaptive_succinct_data[1])
+    adaptive_succinct_data = read_file("../build/changing_distribution_no_lock.log")
+    plot_qps_memory_over_time(adaptive_succinct_data[0], adaptive_succinct_data[1])
 
-    not_succinct_data = read_file("data/not_succinct_over_time_large.txt")
-    plot_qps_memory_over_time(not_succinct_data[0], not_succinct_data[1])
+    adaptive_succinct_data = read_file("../build/changing_distribution_8_threads.log")
+    plot_qps_memory_over_time(adaptive_succinct_data[0], adaptive_succinct_data[1])
+
+    adaptive_succinct_data = read_file("../build/changing_distribution_large.log")
+    plot_qps_memory_over_time(adaptive_succinct_data[0], adaptive_succinct_data[1])
+
+
+    #not_adaptive_succinct_data = read_file("data/succinct_not_adaptive_over_time_large.txt")
+    #plot_qps_memory_over_time(not_adaptive_succinct_data[0], not_adaptive_succinct_data[1])
+
+    #not_succinct_data = read_file("data/not_succinct_over_time_large.txt")
+    #plot_qps_memory_over_time(not_succinct_data[0], not_succinct_data[1])

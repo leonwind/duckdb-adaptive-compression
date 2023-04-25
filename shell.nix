@@ -13,6 +13,7 @@ pkgs.mkShell {
         valgrind
         tbb
         openssl
+        gdb
     ];
 }
 

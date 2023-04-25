@@ -31,6 +31,10 @@ public:
 		background_compaction_enabled = true;
 	}
 
+	inline bool BackgroundCompactionEnabled() {
+		return background_compaction_enabled;
+	}
+
 private:
 	std::unordered_map<ColumnSegment*, AccessStatistics> statistics;
 	idx_t event_counter;

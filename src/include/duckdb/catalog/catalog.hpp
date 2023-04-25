@@ -228,9 +228,7 @@ public:
 
 	DUCKDB_API void Verify();
 
-	ColumnSegmentCatalog* GetColumnSegmentCatalog() {
-		return &column_segment_catalog;
-	}
+	ColumnSegmentCatalog* GetColumnSegmentCatalog();
 
 private:
 	//! Reference to the database

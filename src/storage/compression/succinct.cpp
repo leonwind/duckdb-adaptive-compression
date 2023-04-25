@@ -127,7 +127,12 @@ void SuccinctScanPartial(ColumnSegment &segment, ColumnScanState &state, idx_t s
 	auto source = segment.succinct_vec;
 	result.SetVectorType(VectorType::FLAT_VECTOR);
 	data_ptr_t target_ptr = FlatVector::GetData(result) + result_offset * sizeof(T);
-
+	/*
+	std::cout << "Start: " << start
+	          << ", Size: " << source.size()
+	          << ", Width: " << unsigned(source.width())
+	          << std::endl;
+	*/
 	for (idx_t i = 0; i < scan_count; ++i) {
 		auto entry_at_i = uint64_t(source[start + i]);
 		if (segment.GetMinFactor() != UINT64_MAX) {

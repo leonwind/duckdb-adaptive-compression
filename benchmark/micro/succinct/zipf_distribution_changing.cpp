@@ -12,13 +12,13 @@ using namespace duckdb;
 #define NUM_INSERTS 100000000 // 10 Million
 #define NUM_LOOKUPS 1000000 // 1 Million
 #define ZIPF_K 1
-#define DURATION std::chrono::seconds(30)
+#define DURATION std::chrono::seconds(60)
 #define DISTRIBUTION_CHANGE std::chrono::seconds(15)
 
 DUCKDB_BENCHMARK(SuccinctZipfChangingOverTime, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
 	state->db.instance->config.adaptive_succinct_compression_enabled = true;
-	//state->conn.Query("SET threads TO 4;");
+	state->conn.Query("SET threads TO 4;");
 	state->conn.Query("CREATE TABLE t1(i UINTEGER);");
 
 	Appender appender(state->conn, "t1");
@@ -68,13 +68,13 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 	auto& buffer_manager = state->db.instance->GetBufferManager();
 
 	while (std::chrono::steady_clock::now() - start < DURATION) {
-		state->conn.Query("BEGIN TRANSACTION");
 		auto val = state->data[i];
 
 		if (std::chrono::steady_clock::now() - start >= DISTRIBUTION_CHANGE) {
 			val += NUM_INSERTS / 2;
 		}
 
+		state->conn.Query("BEGIN TRANSACTION");
 		auto query_string = "SELECT t1.i FROM t1 where i == " + std::to_string(val);
 		state->result = state->conn.Query(query_string);
 		state->conn.Query("COMMIT");
@@ -82,7 +82,7 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 		transaction_count++;
 
 		if (std::chrono::steady_clock::now() - qps_start >= std::chrono::seconds(1)) {
-			size_t memory = buffer_manager.GetUsedMemory();
+			size_t memory = buffer_manager.GetDataSize();
 			qps.emplace_back(transaction_count, memory);
 			transaction_count = 0;
 			qps_start = std::chrono::steady_clock::now();

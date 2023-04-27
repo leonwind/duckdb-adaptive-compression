@@ -284,7 +284,7 @@ void ColumnSegment::Uncompact() {
 	force_reinitializing_scan_state = true;
 
 	// TODO: Check if that makes sense
-	size_t uncompressed_size = segment_size < Storage::BLOCK_SIZE ? segment_size : Storage::BLOCK_SIZE;
+	size_t uncompressed_size = segment_size;
 	int64_t diff_size = uncompressed_size - compressed_size;
 	BufferManager::GetBufferManager(db).AddToDataSize(diff_size);
 }

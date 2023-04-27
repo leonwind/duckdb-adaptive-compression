@@ -69,7 +69,7 @@ public:
 	}
 
 	void AddToDataSize(int64_t new_data) {
-		//current_memory += new_data;
+		current_memory += new_data;
 		data_size += new_data;
 	}
 

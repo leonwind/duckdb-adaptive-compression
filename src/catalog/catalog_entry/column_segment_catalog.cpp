@@ -40,7 +40,7 @@ void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 }
 
 void ColumnSegmentCatalog::CompressLowestKSegments() {
-	double compression_rate = 0.9;
+	double compression_rate = 0.95;
 	//bool finished = false;
 	//size_t i = 0;
 	std::cout << "Start background compaction" << std::endl;
@@ -63,7 +63,9 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 		//Print();
 
 		float cum_sum = 0;
+		curr_counter = v.size();
 		for (auto iter = v.begin(); iter != v.end(); iter++) {
+			//cum_sum += 1;
 			cum_sum += iter->second.num_reads;
 
 			if (cum_sum / curr_counter < compression_rate) {
@@ -78,8 +80,10 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 			statistics[iter->first].num_reads = 0;
 			//iter->second.num_reads = 0;
 		}
-
 		event_counter = 0;
+
+		std::cout << "\nFINISHED COMPACTION ROUND\n" << std::endl;
+		std::cout << "Num segments: " << v.size() << std::endl;
 	}
 
 	//Print();
@@ -101,10 +105,13 @@ void ColumnSegmentCatalog::Print() {
 				  return left.second < right.second;
 			  });
 
+	float cum_sum = 0.0;
 	for (auto& curr : v) {
+		cum_sum += curr.second.num_reads;
 		std::cout << curr.first << ": "
 		          << curr.second.num_reads << "/" << curr_counter
 		          << ", compacted: "  << curr.first->IsBitCompressed()
+		          << ", cum ratio: " << cum_sum / curr_counter
 		          << ", size: " << curr.first->SegmentSize()
 		          << ", stats: " << curr.first->stats.statistics->ToString()
 		          << std::endl;

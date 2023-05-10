@@ -2,6 +2,7 @@
 let 
     python = pkgs.python3;
     python-packages = python.withPackages (p: with p; [
+        seaborn
         matplotlib 
     ]);
 in pkgs.mkShell {

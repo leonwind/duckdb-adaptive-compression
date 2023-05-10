@@ -345,3 +345,8 @@ zig-cache/*
 
 # .db files
 *.db
+
+
+*.log
+*.data
+*.old

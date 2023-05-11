@@ -40,8 +40,8 @@ def latexify(fig_width=None, fig_height=None, columns=1, width_heigth_ratio=None
         fig_height = max_height_inches
 
     print(f'fig width={fig_width}, fig height={fig_height}')
-    mpl.use('pgf')
-    params = {'backend': 'pgf',
+    #mpl.use('pgf')
+    params = {#'backend': 'pgf',
               'pgf.rcfonts': False,
               'pgf.texsystem': 'xelatex',
               'axes.labelsize': 10,  # fontsize for x and y labels (was 10)

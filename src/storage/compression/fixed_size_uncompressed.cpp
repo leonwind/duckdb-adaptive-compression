@@ -162,6 +162,13 @@ void FixedSizeScan(ColumnSegment &segment, ColumnScanState &state, idx_t scan_co
 	} else {
 		FlatVector::SetData(result, source_data);
 	}
+
+	/*
+	data_ptr_t target_ptr = FlatVector::GetData(result);
+	for (idx_t i = 0; i < scan_count; ++i) {
+		memcpy(target_ptr + i * sizeof(T), source_data + i * sizeof(T), sizeof(T));
+	}
+	 */
 }
 
 //===--------------------------------------------------------------------===//

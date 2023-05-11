@@ -58,8 +58,11 @@ unique_ptr<ColumnSegment> ColumnSegment::CreateTransientSegment(DatabaseInstance
 	} else {
 		succinct_possible = TypeIsInteger(type.InternalType()) && config.succinct_enabled;
 		function = config.GetCompressionFunction(CompressionType::COMPRESSION_UNCOMPRESSED, type.InternalType());
-		// std::cout << "Create UNCOMPRESSED transient segment with size "<< segment_size << std::endl;
-
+		/*
+		std::cout << "Create UNCOMPRESSED transient segment with size " << segment_size
+		    	  << " of type: " << type.ToString()
+		          << std::endl;
+		*/
 		// transient: allocate a buffer for the uncompressed segment
 		if (segment_size < Storage::BLOCK_SIZE) {
 			block = buffer_manager.RegisterSmallMemory(segment_size);
@@ -92,7 +95,6 @@ ColumnSegment::ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block
 	D_ASSERT(function);
 
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
-		//std::cout << "Create SUCCINCT transient segment at " << this << std::endl;
 		succinct_vec.width(type_size * 8);
 		succinct_vec.resize(segment_size / type_size);
 		BufferManager::GetBufferManager(db).AddToDataSize(sdsl::size_in_bytes(succinct_vec));
@@ -248,6 +250,7 @@ void ColumnSegment::Compact() {
 		BitCompressFromSuccinct();
 		bit_compression_lock.unlock();
 
+		//std::cout << "Size before compress: " << size_before_compress << ", after: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
 		int64_t diff_size = size_before_compress - sdsl::size_in_bytes(succinct_vec);
 		BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
 		return;
@@ -294,6 +297,7 @@ void ColumnSegment::BitCompressFromSuccinct() {
 	//std::cout << "Updated min: " << GetMinFactor() << ", Updated max: " << GetMax() << std::endl;
 	uint64_t min = GetMinFactor();
 	uint64_t max = GetMax() - GetMinFactor();
+	//std::cout << "Min: " << min << ", max: " << max << std::endl;
 
     uint8_t min_width = sdsl::bits::hi(max) + 1;
 	if (DBConfig::GetConfig(db).succinct_padded_to_next_byte_enabled) {
@@ -325,6 +329,7 @@ void ColumnSegment::BitCompressFromSuccinct() {
 }
 
 void ColumnSegment::BitCompressFromUncompressed() {
+	//std::cout << "Start bit compress from uncompressed" << std::endl;
 	//auto old_handle = .Pin(block);
 	//uint8_t* old_data = old_handle.Ptr();
 	uint8_t* uncompressed_ptr = BufferManager::GetBufferManager(db).Pin(block).Ptr();

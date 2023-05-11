@@ -9,7 +9,7 @@
 using namespace duckdb;
 
 #define NUM_INSERTS 1000000
-#define NUM_LOOKUPS 100
+#define NUM_LOOKUPS 10
 
 DUCKDB_BENCHMARK(SuccinctSequentialInsert, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {

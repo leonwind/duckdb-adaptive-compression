@@ -40,7 +40,7 @@ void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 }
 
 void ColumnSegmentCatalog::CompressLowestKSegments() {
-	double compression_rate = 0.95;
+	double compression_rate = 0.90;
 	//bool finished = false;
 	//size_t i = 0;
 	std::cout << "Start background compaction" << std::endl;

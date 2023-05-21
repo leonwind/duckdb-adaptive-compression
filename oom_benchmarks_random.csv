@@ -1,0 +1,12 @@
+SuccinctZipfScanOOM     1       25.098002       9636309231      8341883967
+SuccinctZipfScanOOM     2       25.070744       9636309231      8341883967
+SuccinctZipfScanOOM     3       25.054780       9636309231      8341883967
+SuccinctZipfScanOOM     4       25.112998       9636309231      8341883967
+SuccinctZipfScanOOM     5       25.070173       9636309231      8341883967
+
+NonSuccinctZipfScanOOM  1       25.669882       19275421456     19275421456
+NonSuccinctZipfScanOOM  2       25.681566       19275421456     19275421456
+NonSuccinctZipfScanOOM  3       25.703416       19275421456     19275421456
+NonSuccinctZipfScanOOM  4       25.633283       19275421456     19275421456
+NonSuccinctZipfScanOOM  5       25.680431       19275421456     19275421456
+

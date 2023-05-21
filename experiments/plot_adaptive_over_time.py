@@ -1,4 +1,9 @@
 import matplotlib.pyplot as plt
+from benchmark_plotter import style, texify, colors
+
+
+texify.latexify(3.39, 1.4)
+style.set_custom_style()
 
 
 def read_file(filename):
@@ -7,10 +12,14 @@ def read_file(filename):
 
     qps_per_s = []
     memory_per_s = []
-    for t, l in enumerate(content):
+    t = 0
+    for l in content:
+        if l.startswith("Curr qps:"):
+            continue
         qps, memory = l.split(", ")
         qps_per_s.append((t, int(qps)))
         memory_per_s.append((t, int(memory)))
+        t += 1
     
     return qps_per_s, memory_per_s
 
@@ -35,43 +44,27 @@ def plot_qps_memory_over_time(qps_per_s, memory_per_s):
     plt.show()
 
 
-def compare_qps(results):
-    for result in results:
-        plt.plot(*zip(*result))
+def compare(results, ylabel):
+    for i, result in enumerate(results):
+        plt.plot(*zip(*result), label=str(i))
+
+    plt.ylabel(ylabel)
+    plt.xlabel("Time [s]")
+    #plt.legend()
+    plt.tight_layout()
+    plt.savefig("tmp.pdf", dpi=400)
     plt.show()
 
 
 if __name__ == "__main__":
-    vanilla_duckdb = read_file("../vanilla_duckdb.log")
-    compare_qps([vanilla_duckdb[0]])
+    succinct_adaptive_timeseries = read_file("../succinct_adaptive.log")
+    succinct_not_adaptive_timeseries = read_file("../succinct_not_adaptive.log")
+    not_succinct_timeseries = read_file("../non_succinct.log")
+    compare([not_succinct_timeseries[0], succinct_adaptive_timeseries[0], succinct_not_adaptive_timeseries[0]], "QPS")
+    #compare([not_succinct_timeseries[1], succinct_adaptive_timeseries[1], succinct_not_adaptive_timeseries[1]], "Size [Bytes]")
 
-    short_data = read_file("../kemper_adaptive.log")
-    #plot_qps_memory_over_time(short_data[0], short_data[1])
-
-    non_succinct = read_file("../kemper_non_succinct.log")
-
-    succinct_adaptive_70 = read_file("../kemper_succinct_70.log")
-
-    succinct_0_compression = read_file("../succinct_0_compression.log")
-    #plot_qps_memory_over_time(short_data[0], short_data[1])
-    compare_qps([short_data[0], non_succinct[0], succinct_adaptive_70[0], succinct_0_compression[0]]) 
-    compare_qps([short_data[1], non_succinct[1], succinct_adaptive_70[1]])
-    
-
-    #adaptive_succinct_data = read_file("../build/changing_distribution.log")
-    #plot_qps_memory_over_time(adaptive_succinct_data[0], adaptive_succinct_data[1])
-
-    #adaptive_succinct_data = read_file("../build/changing_distribution_no_lock.log")
-    #plot_qps_memory_over_time(adaptive_succinct_data[0], adaptive_succinct_data[1])
-
-    #adaptive_succinct_data = read_file("../build/changing_distribution_8_threads.log")
-    #plot_qps_memory_over_time(adaptive_succinct_data[0], adaptive_succinct_data[1])
-
-    #adaptive_succinct_data = read_file("../build/changing_distribution_large.log")
-    #plot_qps_memory_over_time(adaptive_succinct_data[0], adaptive_succinct_data[1])
-
-    #not_adaptive_succinct_data = read_file("data/succinct_not_adaptive_over_time_large.txt")
-    #plot_qps_memory_over_time(not_adaptive_succinct_data[0], not_adaptive_succinct_data[1])
-
-    #not_succinct_data = read_file("data/not_succinct_over_time_large.txt")
-    #plot_qps_memory_over_time(not_succinct_data[0], not_succinct_data[1])
+    #not_succinct = read_file("data/non_succinct_zipf_changing.log")
+    #succinct_adaptive = read_file("data/succinct_zipf_changing.log")
+    #succinct_not_adaptive = read_file("data/succinct_not_adaptive_zipf_changing.log")
+    #test = read_file("data/test_succinct_not_adaptive_zipf_changing.log")
+    #compare_qps([not_succinct[0], succinct_adaptive[0], succinct_not_adaptive[0]])

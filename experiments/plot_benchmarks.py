@@ -1,5 +1,4 @@
 import csv
-import matplotlib as mpl
 # Use pgf backend to directly export to LaTeX.
 # Must be set before importing pyplot.
 #mpl.use('pgf')
@@ -19,7 +18,7 @@ texify.latexify(3.39, 1.4)
 style.set_custom_style()
 
 
-LATEX_FRAME_WIDTH =  307.28987
+#LATEX_FRAME_WIDTH =  307.28987
 
 
 def read_csv_file(filename):
@@ -68,16 +67,17 @@ def plot_benchmarks(csv_data):
     #_plot_list_as_barchart(total_memory_per_benchmark.items(), ylabel="Memory in Bytes")
 
 def _plot_list_as_barchart(data, ylabel="", title=""):
-    #fig = plt.figure()
     fig = plt.figure()
-    plt.title(title)
+    #plt.title(title)
     plt.bar(*zip(*data))
     plt.ylabel(ylabel)
+
+    plt.tight_layout()
     filename = title.replace(" ", "_")
-    #plt.savefig(f"plots/pgf/{filename}.pgf", format="pgf")
     plt.savefig(f"plots/{filename}.pdf", dpi=fig.dpi)
-    plt.show()
-    plt.close()
+
+    #plt.show()
+    #plt.close()
 
 
 def _extract_benchmark_groups(data):
@@ -98,19 +98,19 @@ def _extract_benchmark_groups(data):
 def _plot_benchmark_group_runtime(runtimes_per_benchmark):
     benchmark_groups = _extract_benchmark_groups(runtimes_per_benchmark)
     for name, values in benchmark_groups.items():
-        _plot_list_as_barchart(values, ylabel="Time in [s]", title=f"Runtime of {name}")
+        _plot_list_as_barchart(values, ylabel="Time [s]", title=f"Runtime of {name}")
 
 
 def _plot_benchmark_group_initial_memory(initial_memory_per_benchmark):
     benchmark_groups = _extract_benchmark_groups(initial_memory_per_benchmark)
     for name, values in benchmark_groups.items():
-        _plot_list_as_barchart(values, ylabel="Memory in Bytes", title=f"Initial Memory of {name}")
+        _plot_list_as_barchart(values, ylabel="Size [Bytes]", title=f"Initial Memory of {name}")
 
 
 def _plot_benchmark_group_total_memory(total_memory_per_benchmark):
     benchmark_groups = _extract_benchmark_groups(total_memory_per_benchmark)
     for name, values in benchmark_groups.items():
-        _plot_list_as_barchart(values, ylabel="Memory in Bytes", title=f"Total Memory of {name}")
+        _plot_list_as_barchart(values, ylabel="Size [Bytes]", title=f"Total Memory of {name}")
 
 
 def _plot_initial_and_total_memory(initial_memory_per_benchmark, total_memory_per_benchmark):
@@ -125,7 +125,7 @@ def _plot_initial_and_total_memory(initial_memory_per_benchmark, total_memory_pe
             initial_and_total.append((total_values[i][0] + "Total", total_values[i][1]))
         print(initial_and_total)
         
-        _plot_list_as_barchart(initial_and_total, ylabel="Memory in Bytes", title=f"Initial and Total Memory of {name}")
+        _plot_list_as_barchart(initial_and_total, ylabel="Size [Bytes]", title=f"Initial and Total Memory of {name}")
 
 
 if __name__ == "__main__":

@@ -131,6 +131,10 @@ void ColumnSegment::InitializeScan(ColumnScanState &state) {
 
 void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset,
                          bool entire_vector) {
+	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
+		std::cout << "SCANNING SUCCINCT ELEMENT" << std::endl;
+	}
+
 	if (entire_vector) {
 		D_ASSERT(result_offset == 0);
 		Scan(state, scan_count, result);

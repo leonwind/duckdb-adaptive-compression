@@ -1,5 +1,6 @@
 import csv
 import matplotlib.pyplot as plt
+import os
 
 from benchmark_plotter import style, texify, colors
 texify.latexify(3.39, 1.4)
@@ -35,7 +36,7 @@ def plot_instructions(data, column_idx):
 
 
 def plot_cache_references(data, column_idx, name):
-    fix, ax = plt.subplots(nrows=1, ncols=len(column_idx))
+    fix, ax = plt.subplots(nrows=1, sharex=True, ncols=len(column_idx))
 
     for i in range(len(column_idx)):
         std_data = []
@@ -67,7 +68,7 @@ def plot_cache_references(data, column_idx, name):
 
         ax[i].set_xscale("log")
         ax[i].set_ylabel(name[i])
-        ax[i].set_xlabel("Number\nof Elements")
+        ax[i].set_xlabel("No.\ Elements")
 
 
     #ax.axvline(x=131072, ls='-.', color="blue")
@@ -83,8 +84,9 @@ def plot_cache_references(data, column_idx, name):
     #plt.legend()
     plt.tight_layout()
     #filename = name.lower().replace(" ", "_")
-    plt.savefig(f"plots/test.pdf", dpi=400)
-    plt.show()
+    plt.savefig(f"plots/llc-instructions-ipc.pdf")
+    os.system("pdfcrop plots/llc-instructions-ipc.pdf plots/llc-instructions-ipc.pdf")
+    #plt.show()
 
 
 if __name__ == "__main__":

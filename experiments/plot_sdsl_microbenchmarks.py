@@ -147,7 +147,7 @@ def _plot_ratios_side_by_side(num_elements, sdsl_performance, std_performance, s
     axis[1].set_ylabel("Size Ratio")
 
     plt.tight_layout() 
-    plt.savefig(f"plots/sdsl_std_ratios_side_by_side.pdf", dpi=400)
+    #plt.savefig(f"plots/sdsl_std_ratios_side_by_side.pdf", dpi=400)
     plt.show()
 
 if __name__ == "__main__":

@@ -35,10 +35,9 @@ def plot_instructions(data, column_idx):
 
 
 def plot_cache_references(data, column_idx, name):
-    fix, ax = plt.subplots(nrows=1, ncols=2)
+    fix, ax = plt.subplots(nrows=1, ncols=len(column_idx))
 
-    for i in range(2):
-    
+    for i in range(len(column_idx)):
         std_data = []
         sdsl_data = []
         sdsl_byte_aligned_data = []
@@ -68,7 +67,7 @@ def plot_cache_references(data, column_idx, name):
 
         ax[i].set_xscale("log")
         ax[i].set_ylabel(name[i])
-        ax[i].set_xlabel("Number of Elements")
+        ax[i].set_xlabel("Number\nof Elements")
 
 
     #ax.axvline(x=131072, ls='-.', color="blue")
@@ -95,8 +94,11 @@ if __name__ == "__main__":
 
     param_idx = get_idx_for_columns(csv_data)
     print(param_idx)
-    plot_cache_references(csv_data[1:], [param_idx["LLC-misses"], param_idx["instructions"]],
-        ["LLC Misses", "Instructions"])
+    plot_cache_references(
+        csv_data[1:], 
+        [param_idx["LLC-misses"], param_idx["instructions"], param_idx["IPC"]],
+        ["LLC Misses", "Instructions", "IPC"]
+    )
 
     #plot_cache_references(csv_data[1:], param_idx["cache-references"], "Cache References")
     #plot_cache_references(csv_data[1:], param_idx["LLC-misses"], "LLC Misses")

@@ -68,7 +68,7 @@ def plot_benchmarks(csv_data):
 
 def _plot_list_as_barchart(data, ylabel="", title=""):
     fig = plt.figure()
-    #plt.title(title)
+    plt.title(title)
     plt.bar(*zip(*data))
     plt.ylabel(ylabel)
 
@@ -76,7 +76,7 @@ def _plot_list_as_barchart(data, ylabel="", title=""):
     filename = title.replace(" ", "_")
     plt.savefig(f"plots/{filename}.pdf", dpi=fig.dpi)
 
-    #plt.show()
+    plt.show()
     #plt.close()
 
 
@@ -129,7 +129,7 @@ def _plot_initial_and_total_memory(initial_memory_per_benchmark, total_memory_pe
 
 
 if __name__ == "__main__":
-    data = read_csv_file("../benchmarks.csv")
+    data = read_csv_file("../updated_benchmarks.csv")
     for l in data:
         print(l)
     #print(data)

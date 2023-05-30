@@ -11,23 +11,26 @@ ColumnSegmentCatalog::ColumnSegmentCatalog():
 }
 
 void ColumnSegmentCatalog::AddColumnSegment(ColumnSegment* segment) {
-	if (segment->succinct_possible) {
+	if (segment->is_data_segment) {
 		statistics[segment] = AccessStatistics{/* num_reads= */ 0};
-		//std::cout << "Add segment " << &segment << " to access statistics" << std::endl;
-		//std::cout << "This pointer in AddColumnSegment: " << this << std::endl;
 	}
+	//std::cout << "Add segment " << &segment << " to access statistics" << std::endl;
+	//std::cout << "This pointer in AddColumnSegment: " << this << std::endl;
 }
 
 void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
-	//std::cout << "This pointer in AddReadAccess: " << this << std::endl;
+	if (segment == nullptr || !segment->is_data_segment) {
+		return;
+	}
+
 	if (background_compaction_enabled && !background_thread_started) {
 		background_thread_started = true;
 		std::thread t(&ColumnSegmentCatalog::CompressLowestKSegments, this);
 		t.detach();
 	}
 
-	if (statistics.find(segment) == statistics.end() || segment == nullptr) {
-		//statistics[segment] = AccessStatistics{/* num_reads= */ 1};
+	if (statistics.find(segment) == statistics.end()) {
+		statistics[segment] = AccessStatistics{/* num_reads= */ 1};
 		/*
 		if (segment->succinct_possible) {
 			std::cout << "SHOULD NEVER HAPPEN NOW???" << std::endl;
@@ -37,6 +40,13 @@ void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 		statistics[segment].num_reads++;
 		event_counter++;
 	}
+}
+
+void ColumnSegmentCatalog::CompactAllSegments() {
+	for (auto iter = statistics.begin(); iter != statistics.end(); ++iter) {
+		iter->first->Compact();
+	}
+	//Print();
 }
 
 void ColumnSegmentCatalog::CompressLowestKSegments() {
@@ -60,13 +70,13 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 					  return left.second < right.second;
 				  });
 
-		//Print();
+		Print();
 
 		float cum_sum = 0;
 		curr_counter = v.size();
 		for (auto iter = v.begin(); iter != v.end(); iter++) {
-			//cum_sum += 1;
-			cum_sum += iter->second.num_reads;
+			cum_sum += 1;
+			//cum_sum += iter->second.num_reads;
 
 			if (cum_sum / curr_counter < compression_rate) {
 				// Compact all the least accessed segments with a ratio of #compression_rate.
@@ -82,8 +92,8 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 		}
 		event_counter = 0;
 
-		std::cout << "\nFINISHED COMPACTION ROUND\n" << std::endl;
-		std::cout << "Num segments: " << v.size() << std::endl;
+		//std::cout << "\nFINISHED COMPACTION ROUND\n" << std::endl;
+		//std::cout << "Num segments: " << v.size() << std::endl;
 	}
 
 	//Print();
@@ -93,6 +103,14 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 		Print();
 		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 	}
+}
+
+size_t ColumnSegmentCatalog::GetTotalDataSize() {
+	size_t data_size = 0;
+	for (auto iter = statistics.begin(); iter != statistics.end(); ++iter) {
+		data_size += iter->first->GetDataSize();
+	}
+	return data_size;
 }
 
 
@@ -105,6 +123,10 @@ void ColumnSegmentCatalog::Print() {
 				  return left.second < right.second;
 			  });
 
+	size_t segment_sizes = 0;
+	size_t compressed_size = 0;
+	size_t succinct_size = 0;
+
 	float cum_sum = 0.0;
 	for (auto& curr : v) {
 		cum_sum += curr.second.num_reads;
@@ -112,10 +134,19 @@ void ColumnSegmentCatalog::Print() {
 		          << curr.second.num_reads << "/" << curr_counter
 		          << ", compacted: "  << curr.first->IsBitCompressed()
 		          << ", cum ratio: " << cum_sum / curr_counter
-		          << ", size: " << curr.first->SegmentSize()
+		          << ", size: " << curr.first->GetDataSize()
+		          << ", ratio: " << double(curr.first->GetDataSize()) / curr.first->SegmentSize()
 		          << ", stats: " << curr.first->stats.statistics->ToString()
 		          << std::endl;
+
+		segment_sizes += curr.first->SegmentSize();
+		compressed_size += curr.first->GetDataSize();
+		succinct_size += curr.first->SuccinctSize();
 	}
+
+	std::cout << "Segment size: " << segment_sizes << std::endl;
+	std::cout << "Compressed size: " << compressed_size << std::endl;
+	std::cout << "Succinct size: " << succinct_size << std::endl;
 
 	std::cout << "######" << std::endl;
 }

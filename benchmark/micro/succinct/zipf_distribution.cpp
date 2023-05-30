@@ -1,9 +1,11 @@
 #include "benchmark_runner.hpp"
 #include "duckdb/main/appender.hpp"
+#include "duckdb/main/database_manager.hpp"
 #include "duckdb/storage/buffer_manager.hpp"
-#include "duckdb_benchmark_macro.hpp"
 #include "duckdb/storage/table/column_segment.hpp"
+#include "duckdb_benchmark_macro.hpp"
 #include "zipf.cpp"
+
 #include <iostream>
 
 using namespace duckdb;
@@ -30,6 +32,9 @@ void Load(DuckDBBenchmarkState *state) override {
 	for (int i = 0; i < NUM_LOOKUPS; ++i) {
 		state->data.push_back(uint32_t(std::round(zipf(gen))));
 	}
+
+	auto& db_manager = state->db.instance->GetDatabaseManager();
+	db_manager.GetSystemCatalog().GetColumnSegmentCatalog()->CompactAllSegments();
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
@@ -118,6 +123,9 @@ void Load(DuckDBBenchmarkState *state) override {
 	for (int i = 0; i < NUM_LOOKUPS; ++i) {
 		state->data.push_back(uint32_t(std::round(zipf(gen))));
 	}
+
+	auto& db_manager = state->db.instance->GetDatabaseManager();
+	db_manager.GetSystemCatalog().GetColumnSegmentCatalog()->CompactAllSegments();
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {

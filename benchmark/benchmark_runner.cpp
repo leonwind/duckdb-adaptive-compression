@@ -4,6 +4,7 @@
 #include "duckdb/common/file_system.hpp"
 #include "duckdb/common/string_util.hpp"
 #include "duckdb/storage/buffer_manager.hpp"
+#include "duckdb/main/database_manager.hpp"
 #include "duckdb.hpp"
 #include "duckdb_benchmark.hpp"
 #include "interpreted_benchmark.hpp"
@@ -109,8 +110,12 @@ void BenchmarkRunner::RunSuccinctBenchmark(Benchmark *benchmark) {
 	auto state = benchmark->Initialize(configuration);
 	auto nruns = benchmark->NRuns();
 
-	size_t initial_memory_usage =
-	    ((DuckDBBenchmarkState*) state.get())->db.instance->GetBufferManager().GetDataSize();
+	//size_t initial_memory_usage =
+	//    ((DuckDBBenchmarkState*) state.get())->db.instance->GetBufferManager().GetDataSize();
+
+	auto& db_manager = ((DuckDBBenchmarkState*) state.get())->db.instance->GetDatabaseManager();
+	auto column_segment_catalog = db_manager.GetSystemCatalog().GetColumnSegmentCatalog();
+	size_t initial_memory_usage = column_segment_catalog->GetTotalDataSize();
 
 	for (size_t i = 0; i < nruns + 1; i++) {
 		bool hotrun = i > 0;
@@ -122,14 +127,14 @@ void BenchmarkRunner::RunSuccinctBenchmark(Benchmark *benchmark) {
 		}
 		is_active = true;
 		timeout = false;
-		std::thread interrupt_thread(sleep_thread, benchmark, state.get(), benchmark->Timeout());
+		//std::thread interrupt_thread(sleep_thread, benchmark, state.get(), benchmark->Timeout());
 
 		profiler.Start();
 		benchmark->Run(state.get());
 		profiler.End();
 
 		is_active = false;
-		interrupt_thread.join();
+		//interrupt_thread.join();
 		if (hotrun) {
 			LogOutput(benchmark->GetLogOutput(state.get()));
 			if (timeout) {
@@ -150,8 +155,9 @@ void BenchmarkRunner::RunSuccinctBenchmark(Benchmark *benchmark) {
 			}
 			Log(StringUtil::Format("%s\t", std::to_string(initial_memory_usage)));
 
-			size_t used_mem_after_query =
-			    ((DuckDBBenchmarkState*) state.get())->db.instance->GetBufferManager().GetDataSize();
+			//size_t used_mem_after_query =
+			//    ((DuckDBBenchmarkState*) state.get())->db.instance->GetBufferManager().GetDataSize();
+			size_t used_mem_after_query = column_segment_catalog->GetTotalDataSize();
 			LogLine(std::to_string(used_mem_after_query));
 		}
 		benchmark->Cleanup(state.get());

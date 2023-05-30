@@ -58,8 +58,10 @@ public:
 	shared_ptr<BlockHandle> block;
 
 	sdsl::int_vector<> succinct_vec;
-	//! If succinct compression is possible, e.g. its an integer column
+	//! If succinct compression is possible and enabled, e.g. its an integer column.
 	bool succinct_possible;
+	//! If segment actually contains the data and is not a validity vector.
+	bool is_data_segment;
 
 	static unique_ptr<ColumnSegment> CreatePersistentSegment(DatabaseInstance &db, BlockManager &block_manager,
 	                                                         block_id_t id, idx_t offset, const LogicalType &type_p,
@@ -84,6 +86,11 @@ public:
 
 	// The maximum size of the buffer (in bytes)
 	idx_t SegmentSize() const;
+
+	idx_t GetDataSize() const;
+
+	idx_t SuccinctSize() const;
+
 	//! Resize the block
 	void Resize(idx_t segment_size);
 
@@ -167,7 +174,7 @@ public:
 	ColumnSegment(DatabaseInstance &db, shared_ptr<BlockHandle> block, LogicalType type, ColumnSegmentType segment_type,
 	              idx_t start, idx_t count, CompressionFunction *function, unique_ptr<BaseStatistics> statistics,
 	              block_id_t block_id, idx_t offset, idx_t segment_size, bool succinct_possible,
-	              bool background_compaction_enabled);
+	              bool background_compaction_enabled, bool is_data_segment);
 
 	ColumnSegment(ColumnSegment &other, idx_t start);
 

@@ -35,6 +35,10 @@ public:
 		return background_compaction_enabled;
 	}
 
+	void CompactAllSegments();
+
+	size_t GetTotalDataSize();
+
 private:
 	std::unordered_map<ColumnSegment*, AccessStatistics> statistics;
 	idx_t event_counter;

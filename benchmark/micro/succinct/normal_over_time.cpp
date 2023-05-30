@@ -12,10 +12,9 @@ using namespace duckdb;
 
 #define NUM_INSERTS 1000000000 // 1 Billion
 #define NUM_LOOKUPS 50000
-#define ZIPF_K 1
 #define DURATION std::chrono::seconds(60)
 
-DUCKDB_BENCHMARK(SuccinctZipfDistributionOverTime, "[succinct]")
+DUCKDB_BENCHMARK(SuccinctNormalDistributionOverTime, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
 	state->db.instance->config.adaptive_succinct_compression_enabled = true;
 	state->conn.Query("CREATE TABLE t1(i UINTEGER);");
@@ -27,24 +26,16 @@ void Load(DuckDBBenchmarkState *state) override {
 		appender.EndRow();
 	}
 	appender.Close();
-	std::cout << "Finished insertion" << std::endl;
 
 	std::random_device rd{};
     std::mt19937 gen{rd()};
-	Zipf<uint32_t, double> zipf(NUM_INSERTS, ZIPF_K);
-	std::unordered_map<uint32_t, uint32_t> frequencies;
+	std::normal_distribution<> normal{
+	    /* mean= */ std::round(NUM_INSERTS / 2),
+	    /* stddev= */ std::round(NUM_INSERTS) / 4};
 	for (int i = 0; i < NUM_LOOKUPS; ++i) {
-		uint32_t curr = uint32_t(std::round(zipf(gen)));
+		uint32_t curr = uint32_t(std::round(normal(gen)));
 		state->data.push_back(curr);
-		if (frequencies.find(curr) == frequencies.end()) {
-			frequencies[curr] = 1;
-		} else {
-			frequencies[curr] += 1;
-		}
 	}
-
-	auto& db_manager = state->db.instance->GetDatabaseManager();
-	db_manager.GetSystemCatalog().GetColumnSegmentCatalog()->CompactAllSegments();
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
@@ -56,7 +47,7 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 	size_t transaction_count = 0;
 
 	auto& buffer_manager = state->db.instance->GetBufferManager();
-	std::cout << "Start queries" << std::endl;
+
 	while (std::chrono::steady_clock::now() - start < DURATION) {
 		state->conn.Query("BEGIN TRANSACTION");
 		auto val = state->data[i];
@@ -69,10 +60,8 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 		if (std::chrono::steady_clock::now() - qps_start >= std::chrono::seconds(1)) {
 			size_t memory = buffer_manager.GetUsedMemory();
 			qps.emplace_back(transaction_count, memory);
-			std::cout << transaction_count << ", " << memory << std::endl;
 			transaction_count = 0;
 			qps_start = std::chrono::steady_clock::now();
-
 		}
 
 		if (i >= state->data.size()) {
@@ -97,9 +86,9 @@ string BenchmarkInfo() override {
 bool InMemory() override {
 	return true;
 }
-FINISH_BENCHMARK(SuccinctZipfDistributionOverTime)
+FINISH_BENCHMARK(SuccinctNormalDistributionOverTime)
 
-DUCKDB_BENCHMARK(SuccinctNotAdaptiveZipfDistributionOverTime, "[succinct]")
+DUCKDB_BENCHMARK(SuccinctNotAdaptiveNormalDistributionOverTime, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
 	state->conn.Query("CREATE TABLE t1(i UINTEGER);");
 
@@ -113,9 +102,12 @@ void Load(DuckDBBenchmarkState *state) override {
 
 	std::random_device rd{};
     std::mt19937 gen{rd()};
-	Zipf<uint32_t, double> zipf(NUM_INSERTS, ZIPF_K);
+	std::normal_distribution<> normal{
+	    /* mean= */ std::round(NUM_INSERTS / 2),
+	    /* stddev= */ std::round(NUM_INSERTS) / 4};
 	for (int i = 0; i < NUM_LOOKUPS; ++i) {
-		state->data.push_back(uint32_t(std::round(zipf(gen))));
+		uint32_t curr = uint32_t(std::round(normal(gen)));
+		state->data.push_back(curr);
 	}
 
 	auto& db_manager = state->db.instance->GetDatabaseManager();
@@ -144,7 +136,6 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 		if (std::chrono::steady_clock::now() - qps_start >= std::chrono::seconds(1)) {
 			size_t memory = buffer_manager.GetUsedMemory();
 			qps.emplace_back(transaction_count, memory);
-			std::cout << transaction_count << ", " << memory << std::endl;
 			transaction_count = 0;
 			qps_start = std::chrono::steady_clock::now();
 		}
@@ -170,10 +161,10 @@ string BenchmarkInfo() override {
 bool InMemory() override {
 	return true;
 }
-FINISH_BENCHMARK(SuccinctNotAdaptiveZipfDistributionOverTime)
+FINISH_BENCHMARK(SuccinctNotAdaptiveNormalDistributionOverTime)
 
 
-DUCKDB_BENCHMARK(NonSuccinctZipfDistributionOverTime, "[succinct]")
+DUCKDB_BENCHMARK(NonSuccinctNormalDistributionOverTime, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
 	state->db.instance->config.succinct_enabled = false;
 
@@ -188,9 +179,12 @@ void Load(DuckDBBenchmarkState *state) override {
 
 	std::random_device rd{};
     std::mt19937 gen{rd()};
-	Zipf<uint32_t, double> zipf(NUM_INSERTS, ZIPF_K);
+	std::normal_distribution<> normal{
+	    /* mean= */ std::round(NUM_INSERTS / 2),
+	    /* stddev= */ std::round(NUM_INSERTS) / 4};
 	for (int i = 0; i < NUM_LOOKUPS; ++i) {
-		state->data.push_back(uint32_t(std::round(zipf(gen))));
+		uint32_t curr = uint32_t(std::round(normal(gen)));
+		state->data.push_back(curr);
 	}
 }
 
@@ -216,7 +210,6 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 		if (std::chrono::steady_clock::now() - qps_start >= std::chrono::seconds(1)) {
 			size_t memory = buffer_manager.GetUsedMemory();
 			qps.emplace_back(transaction_count, memory);
-			std::cout << transaction_count << ", " << memory << std::endl;
 			transaction_count = 0;
 			qps_start = std::chrono::steady_clock::now();
 		}
@@ -243,5 +236,5 @@ string BenchmarkInfo() override {
 bool InMemory() override {
 	return true;
 }
-FINISH_BENCHMARK(NonSuccinctZipfDistributionOverTime)
+FINISH_BENCHMARK(NonSuccinctNormalDistributionOverTime)
 

@@ -1,0 +1,16 @@
+name,run,timing,sizeInBytes,MemoryAllocationInBytes
+NonSuccinctZipfDistribution,1,34.084087,7729800312,7729800312
+NonSuccinctZipfDistribution,2,34.036978,7729800312,7729800312
+NonSuccinctZipfDistribution,3,33.968757,7729800312,7729800312
+NonSuccinctZipfDistribution,4,34.064633,7729800312,7729800312
+NonSuccinctZipfDistribution,5,34.058720,7729800312,7729800312
+SuccinctZipfDistribution,1,34.990211,4554069830,4554069830
+SuccinctZipfDistribution,2,34.950967,4554069830,4554069830
+SuccinctZipfDistribution,3,34.951194,4554069830,4554069830
+SuccinctZipfDistribution,4,34.990449,4554069830,4554069830
+SuccinctZipfDistribution,5,35.017459,4554069830,4554069830
+SuccinctPaddedZipfDistribution,1,34.905987,4570318406,4570318406
+SuccinctPaddedZipfDistribution,2,34.896000,4570318406,4570318406
+SuccinctPaddedZipfDistribution,3,34.881565,4570318406,4570318406
+SuccinctPaddedZipfDistribution,4,34.870004,4570318406,4570318406
+SuccinctPaddedZipfDistribution,5,34.884425,4570318406,4570318406

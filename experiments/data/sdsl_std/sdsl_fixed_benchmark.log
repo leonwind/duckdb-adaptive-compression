@@ -1,0 +1,297 @@
+i: 0, Num elements: 2
+SDSL uncompressed size: 25
+SDSL compressed size: 17
+SDSL duration: 50
+SDSL Byte Aligned uncompressed size: 25
+SDSL Byte Aligned compressed size: 17
+SDSL Byte Aligned duration: 26
+STD size: 16
+STD duration: 26
+i: 1, Num elements: 4
+SDSL uncompressed size: 41
+SDSL compressed size: 17
+SDSL duration: 15
+SDSL Byte Aligned uncompressed size: 41
+SDSL Byte Aligned compressed size: 17
+SDSL Byte Aligned duration: 20
+STD size: 32
+STD duration: 16
+i: 2, Num elements: 8
+SDSL uncompressed size: 73
+SDSL compressed size: 17
+SDSL duration: 15
+SDSL Byte Aligned uncompressed size: 73
+SDSL Byte Aligned compressed size: 17
+SDSL Byte Aligned duration: 13
+STD size: 64
+STD duration: 14
+i: 3, Num elements: 16
+SDSL uncompressed size: 137
+SDSL compressed size: 17
+SDSL duration: 15
+SDSL Byte Aligned uncompressed size: 137
+SDSL Byte Aligned compressed size: 25
+SDSL Byte Aligned duration: 14
+STD size: 128
+STD duration: 14
+i: 4, Num elements: 32
+SDSL uncompressed size: 265
+SDSL compressed size: 33
+SDSL duration: 15
+SDSL Byte Aligned uncompressed size: 265
+SDSL Byte Aligned compressed size: 41
+SDSL Byte Aligned duration: 14
+STD size: 256
+STD duration: 15
+i: 5, Num elements: 64
+SDSL uncompressed size: 521
+SDSL compressed size: 57
+SDSL duration: 15
+SDSL Byte Aligned uncompressed size: 521
+SDSL Byte Aligned compressed size: 73
+SDSL Byte Aligned duration: 15
+STD size: 512
+STD duration: 14
+i: 6, Num elements: 128
+SDSL uncompressed size: 1033
+SDSL compressed size: 121
+SDSL duration: 15
+SDSL Byte Aligned uncompressed size: 1033
+SDSL Byte Aligned compressed size: 137
+SDSL Byte Aligned duration: 14
+STD size: 1024
+STD duration: 14
+i: 7, Num elements: 256
+SDSL uncompressed size: 2057
+SDSL compressed size: 265
+SDSL duration: 15
+SDSL Byte Aligned uncompressed size: 2057
+SDSL Byte Aligned compressed size: 265
+SDSL Byte Aligned duration: 16
+STD size: 2048
+STD duration: 14
+i: 8, Num elements: 512
+SDSL uncompressed size: 4105
+SDSL compressed size: 585
+SDSL duration: 14
+SDSL Byte Aligned uncompressed size: 4105
+SDSL Byte Aligned compressed size: 1033
+SDSL Byte Aligned duration: 14
+STD size: 4096
+STD duration: 15
+i: 9, Num elements: 1024
+SDSL uncompressed size: 8201
+SDSL compressed size: 1289
+SDSL duration: 16
+SDSL Byte Aligned uncompressed size: 8201
+SDSL Byte Aligned compressed size: 2057
+SDSL Byte Aligned duration: 15
+STD size: 8192
+STD duration: 15
+i: 10, Num elements: 2048
+SDSL uncompressed size: 16393
+SDSL compressed size: 2825
+SDSL duration: 14
+SDSL Byte Aligned uncompressed size: 16393
+SDSL Byte Aligned compressed size: 4105
+SDSL Byte Aligned duration: 14
+STD size: 16384
+STD duration: 16
+i: 11, Num elements: 4096
+SDSL uncompressed size: 32777
+SDSL compressed size: 6153
+SDSL duration: 14
+SDSL Byte Aligned uncompressed size: 32777
+SDSL Byte Aligned compressed size: 8201
+SDSL Byte Aligned duration: 15
+STD size: 32768
+STD duration: 15
+i: 12, Num elements: 8192
+SDSL uncompressed size: 65545
+SDSL compressed size: 13321
+SDSL duration: 15
+SDSL Byte Aligned uncompressed size: 65545
+SDSL Byte Aligned compressed size: 16393
+SDSL Byte Aligned duration: 20
+STD size: 65536
+STD duration: 15
+i: 13, Num elements: 16384
+SDSL uncompressed size: 131081
+SDSL compressed size: 28681
+SDSL duration: 15
+SDSL Byte Aligned uncompressed size: 131081
+SDSL Byte Aligned compressed size: 32777
+SDSL Byte Aligned duration: 15
+STD size: 131072
+STD duration: 15
+i: 14, Num elements: 32768
+SDSL uncompressed size: 262153
+SDSL compressed size: 61449
+SDSL duration: 22
+SDSL Byte Aligned uncompressed size: 262153
+SDSL Byte Aligned compressed size: 65545
+SDSL Byte Aligned duration: 15
+STD size: 262144
+STD duration: 15
+i: 15, Num elements: 65536
+SDSL uncompressed size: 524297
+SDSL compressed size: 131081
+SDSL duration: 15
+SDSL Byte Aligned uncompressed size: 524297
+SDSL Byte Aligned compressed size: 131081
+SDSL Byte Aligned duration: 15
+STD size: 524288
+STD duration: 19
+i: 16, Num elements: 131072
+SDSL uncompressed size: 1048585
+SDSL compressed size: 278537
+SDSL duration: 20
+SDSL Byte Aligned uncompressed size: 1048585
+SDSL Byte Aligned compressed size: 393225
+SDSL Byte Aligned duration: 23
+STD size: 1048576
+STD duration: 14
+i: 17, Num elements: 262144
+SDSL uncompressed size: 2097161
+SDSL compressed size: 589833
+SDSL duration: 27
+SDSL Byte Aligned uncompressed size: 2097161
+SDSL Byte Aligned compressed size: 786441
+SDSL Byte Aligned duration: 21
+STD size: 2097152
+STD duration: 15
+i: 18, Num elements: 524288
+SDSL uncompressed size: 4194313
+SDSL compressed size: 1245193
+SDSL duration: 21
+SDSL Byte Aligned uncompressed size: 4194313
+SDSL Byte Aligned compressed size: 1572873
+SDSL Byte Aligned duration: 21
+STD size: 4194304
+STD duration: 15
+i: 19, Num elements: 1048576
+SDSL uncompressed size: 8388617
+SDSL compressed size: 2621449
+SDSL duration: 21
+SDSL Byte Aligned uncompressed size: 8388617
+SDSL Byte Aligned compressed size: 3145737
+SDSL Byte Aligned duration: 20
+STD size: 8388608
+STD duration: 15
+i: 20, Num elements: 2097152
+SDSL uncompressed size: 16777225
+SDSL compressed size: 5505033
+SDSL duration: 40
+SDSL Byte Aligned uncompressed size: 16777225
+SDSL Byte Aligned compressed size: 6291465
+SDSL Byte Aligned duration: 25
+STD size: 16777216
+STD duration: 25
+i: 21, Num elements: 4194304
+SDSL uncompressed size: 33554441
+SDSL compressed size: 11534345
+SDSL duration: 25
+SDSL Byte Aligned uncompressed size: 33554441
+SDSL Byte Aligned compressed size: 12582921
+SDSL Byte Aligned duration: 25
+STD size: 33554432
+STD duration: 20
+i: 22, Num elements: 8388608
+SDSL uncompressed size: 67108873
+SDSL compressed size: 24117257
+SDSL duration: 22
+SDSL Byte Aligned uncompressed size: 67108873
+SDSL Byte Aligned compressed size: 25165833
+SDSL Byte Aligned duration: 25
+STD size: 67108864
+STD duration: 25
+i: 23, Num elements: 16777216
+SDSL uncompressed size: 134217737
+SDSL compressed size: 50331657
+SDSL duration: 19
+SDSL Byte Aligned uncompressed size: 134217737
+SDSL Byte Aligned compressed size: 50331657
+SDSL Byte Aligned duration: 19
+STD size: 134217728
+STD duration: 19
+i: 24, Num elements: 33554432
+SDSL uncompressed size: 268435465
+SDSL compressed size: 104857609
+SDSL duration: 40
+SDSL Byte Aligned uncompressed size: 268435465
+SDSL Byte Aligned compressed size: 134217737
+SDSL Byte Aligned duration: 25
+STD size: 268435456
+STD duration: 24
+i: 25, Num elements: 67108864
+SDSL uncompressed size: 536870921
+SDSL compressed size: 218103817
+SDSL duration: 29
+SDSL Byte Aligned uncompressed size: 536870921
+SDSL Byte Aligned compressed size: 268435465
+SDSL Byte Aligned duration: 26
+STD size: 536870912
+STD duration: 25
+i: 26, Num elements: 134217728
+SDSL uncompressed size: 1073741833
+SDSL compressed size: 452984841
+SDSL duration: 25
+SDSL Byte Aligned uncompressed size: 1073741833
+SDSL Byte Aligned compressed size: 536870921
+SDSL Byte Aligned duration: 26
+STD size: 1073741824
+STD duration: 19
+i: 27, Num elements: 268435456
+SDSL uncompressed size: 2147483657
+SDSL compressed size: 939524105
+SDSL duration: 25
+SDSL Byte Aligned uncompressed size: 2147483657
+SDSL Byte Aligned compressed size: 1073741833
+SDSL Byte Aligned duration: 29
+STD size: 2147483648
+STD duration: 34
+i: 28, Num elements: 536870912
+SDSL uncompressed size: 4294967305
+SDSL compressed size: 1946157065
+SDSL duration: 26
+SDSL Byte Aligned uncompressed size: 4294967305
+SDSL Byte Aligned compressed size: 2147483657
+SDSL Byte Aligned duration: 25
+STD size: 4294967296
+STD duration: 28
+i: 29, Num elements: 1073741824
+SDSL uncompressed size: 8589934601
+SDSL compressed size: 4026531849
+SDSL duration: 34
+SDSL Byte Aligned uncompressed size: 8589934601
+SDSL Byte Aligned compressed size: 4294967305
+SDSL Byte Aligned duration: 25
+STD size: 8589934592
+STD duration: 33
+i: 30, Num elements: 2147483648
+SDSL uncompressed size: 17179869193
+SDSL compressed size: 8321499145
+SDSL duration: 35
+SDSL Byte Aligned uncompressed size: 17179869193
+SDSL Byte Aligned compressed size: 8589934601
+SDSL Byte Aligned duration: 35
+STD size: 17179869184
+STD duration: 33
+i: 31, Num elements: 4294967296
+SDSL uncompressed size: 34359738377
+SDSL compressed size: 17179869193
+SDSL duration: 35
+SDSL Byte Aligned uncompressed size: 34359738377
+SDSL Byte Aligned compressed size: 17179869193
+SDSL Byte Aligned duration: 25
+STD size: 34359738368
+STD duration: 33
+i: 32, Num elements: 8589934592
+SDSL uncompressed size: 68719476745
+SDSL compressed size: 35433480201
+SDSL duration: 34
+SDSL Byte Aligned uncompressed size: 68719476745
+SDSL Byte Aligned compressed size: 42949672969
+SDSL Byte Aligned duration: 37
+STD size: 68719476736
+STD duration: 35

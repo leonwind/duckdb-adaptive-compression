@@ -347,7 +347,5 @@ zig-cache/*
 *.db
 
 
-*.log
 *.data
 *.old
-*.csv

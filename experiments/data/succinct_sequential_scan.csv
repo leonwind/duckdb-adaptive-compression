@@ -1,0 +1,10 @@
+name,run,timing,sizeInBytes,MemoryAllocationInBytes
+NonSuccinctSequentialInsert,1,68.968220,58048374152,58048374152
+NonSuccinctSequentialInsert,2,63.019891,58048374152,58048374152
+NonSuccinctSequentialInsert,3,62.457329,58048374152,58048374152
+SuccinctSequentialInsert,1,73.947248,22201748674,22201748674
+SuccinctSequentialInsert,2,69.906759,22201748674,22201748674
+SuccinctSequentialInsert,3,69.696145,22201748674,22201748674
+SuccinctPaddedSequentialInsert,1,73.484721,22851752578,22851752578
+SuccinctPaddedSequentialInsert,2,69.094171,22851752578,22851752578
+SuccinctPaddedSequentialInsert,3,68.009746,22851752578,22851752578

@@ -1,0 +1,16 @@
+name,run,timing,sizeInBytes,MemoryAllocationInBytes
+NonSuccinctNormalDistribution,1,33.521366.7729800312,7729800312
+NonSuccinctNormalDistribution,2,33.478188.7729800312,7729800312
+NonSuccinctNormalDistribution,3,33.397783.7729800312,7729800312
+NonSuccinctNormalDistribution,4,33.434450.7729800312,7729800312
+NonSuccinctNormalDistribution,5,33.448701.7729800312,7729800312
+SuccinctNormalDistribution,1,34.568243.4554069830,4554069830
+SuccinctNormalDistribution,2,34.548037.4554069830,4554069830
+SuccinctNormalDistribution,3,34.559681.4554069830,4554069830
+SuccinctNormalDistribution,4,34.553291.4554069830,4554069830
+SuccinctNormalDistribution,5,34.566362.4554069830,4554069830
+SuccinctPaddedNormalDistribution,1,34.470730.6430179310,4994809054
+SuccinctPaddedNormalDistribution,2,34.470898.6430179310,4994809054
+SuccinctPaddedNormalDistribution,3,34.462658.6430179310,4994809054
+SuccinctPaddedNormalDistribution,4,34.469296.6430179310,4994809054
+SuccinctPaddedNormalDistribution,5,34.424945.6430179310,4994809054

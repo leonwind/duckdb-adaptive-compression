@@ -1,0 +1,5 @@
+name,run,timing,sizeInBytes,MemoryAllocationInBytes
+NonSuccinctScanOOM,1,546.981194,58048374152,58048374152
+SuccinctSequentialInsert,1,73.947248,22201748674,22201748674
+SuccinctSequentialInsert,2,69.906759,22201748674,22201748674
+SuccinctSequentialInsert,3,69.696145,22201748674,22201748674

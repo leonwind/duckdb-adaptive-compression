@@ -7,7 +7,7 @@ import math
 L1_CACHE_SIZE = 320 << 10
 L3_CACHE_SIZE = 1.447e7
 
-texify.latexify(3.39, 1.1)
+texify.latexify(3.39, 1.25)
 style.set_custom_style()
 
 
@@ -79,24 +79,24 @@ def create_plots(data):
     l3_sdsl, l3_std = _find_number_elements_fitting_cache(data, L3_CACHE_SIZE)
     caches = VectorCaches(l1_sdsl, l1_std, l3_sdsl, l3_std)
 
-    _plot(data["num_elements"], [
-        ("SDSL Duration", data["sdsl_duration"]),
-        ("SDSL Duration Padded", data["sdsl_duration_padded"]),
-        ("STD Duration", data["std_duration"])
-    ], "sdsl_std_duration", caches, ylabel="Time [ms]", show_cache_borders=True, convert_data=1e6)
+    # _plot(data["num_elements"], [
+    #    ("SDSL Duration", data["sdsl_duration"]),
+    #    ("SDSL Duration Padded", data["sdsl_duration_padded"]),
+    #    ("STD Duration", data["std_duration"])
+    # ], "sdsl_std_duration", caches, ylabel="Time [ms]", show_cache_borders=True, convert_data=1e6)
 
-    _plot(data["num_elements"], [
-        ("SDSL Compressed Size", data["sdsl_size_compressed"]),
-        ("SDSL Compressed Size Padded", data["sdsl_size_compressed_padded"]),
-        ("STD Size", data["std_size"])
-    ], "sdsl_std_memory", caches, ylabel="Size [KiB]", convert_data=1024)
+    # _plot(data["num_elements"], [
+    #    ("SDSL Compressed Size", data["sdsl_size_compressed"]),
+    #    ("SDSL Compressed Size Padded", data["sdsl_size_compressed_padded"]),
+    #    ("STD Size", data["std_size"])
+    # ], "sdsl_std_memory", caches, ylabel="Size [KiB]", convert_data=1024)
 
-    # _plot_ratios_side_by_side(
-    #   data["num_elements"],
-    #   data["sdsl_duration"],
-    #   data["std_duration"],
-    #   data["sdsl_size_compressed"],
-    #   data["std_size"])
+    _plot_ratios_side_by_side(
+        data["num_elements"],
+        data["sdsl_duration"],
+        data["std_duration"],
+        data["sdsl_size_compressed"],
+        data["std_size"])
 
 
 def _add_cache_label(axis, figure, color, label, x, y):
@@ -160,10 +160,10 @@ def _plot_ratios_side_by_side(num_elements, sdsl_performance, std_performance, s
     axis[0].set_xlabel("No.\ Elements")
     axis[0].set_ylabel("Perf.\ Ratio")
 
-    axis[0].axvline(x=131072, ls='-.', color="blue")
-    axis[0].axvline(x=32768, ls='-.', color="green")
-    axis[0].axvline(x=8388608, ls='-.', color="blue")
-    axis[0].axvline(x=2097152, ls='-.', color="green")
+    axis[0].axvline(x=131072, ls='-', linewidth=1, color=colors.colors["blue"])
+    axis[0].axvline(x=32768, ls='-', linewidth=1, color=colors.colors["green"])
+    axis[0].axvline(x=8388608, ls='-', linewidth=1, color=colors.colors["blue"])
+    axis[0].axvline(x=2097152, ls='-', linewidth=1, color=colors.colors["green"])
 
     axis[1].plot(num_elements, size_ratio, color="red")
     axis[1].set_xscale("log")
@@ -171,7 +171,8 @@ def _plot_ratios_side_by_side(num_elements, sdsl_performance, std_performance, s
     axis[1].set_ylabel("Size Ratio")
 
     plt.tight_layout()
-    plt.savefig(f"plots/sdsl_std_ratios_side_by_side.pdf", dpi=400)
+    plt.savefig("plots/sdsl_std_ratios_side_by_side.pdf")
+    os.system("pdfcrop plots/sdsl_std_ratios_side_by_side.pdf plots/sdsl_std_ratios_side_by_side.pdf")
     # plt.show()
 
 

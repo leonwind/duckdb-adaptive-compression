@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 from benchmark_plotter import style, texify, colors
+import os
 
 
-texify.latexify(3.39, 1.4)
+texify.latexify(3.39, 1.3)
 style.set_custom_style()
 
 
@@ -17,8 +18,8 @@ def read_file(filename):
         if l.startswith("Curr qps:"):
             continue
         qps, memory = l.split(", ")
-        qps_per_s.append((t, int(qps)))
-        memory_per_s.append((t, int(memory) / 10**9))
+        qps_per_s.append((t / 60, int(qps)))
+        memory_per_s.append((t / 60, int(memory) / 10**9))
         t += 1
     
     return qps_per_s, memory_per_s
@@ -50,11 +51,14 @@ def compare(results, ylabel):
         plt.plot(*zip(*result), label=str(i), color=_colors[i])
 
     plt.ylabel(ylabel)
-    plt.xlabel("Time [s]")
+    plt.xlabel("Time [min]")
     #plt.legend()
     plt.tight_layout()
-    filename = ylabel.replace(" ", "_")
-    plt.savefig(f"{filename}.pdf", dpi=400)
+    
+    filename = ylabel.replace(" ", "_") + ".pdf"
+    plt.savefig(filename, dpi=400)
+    os.system(f"pdfcrop {filename} {filename}")
+
     plt.show()
 
 

@@ -2,8 +2,9 @@ import csv
 
 import matplotlib.pyplot as plt
 from benchmark_plotter import style, texify, colors
+import os
 
-texify.latexify(3.39, 1.4)
+texify.latexify(3.39, 1)
 style.set_custom_style()
 
 GROUPS = ["Succinct", "Succinct Padded", "Uncompressed"]
@@ -102,8 +103,10 @@ def _plot_side_by_side(perf_data, mem_data, name):
     ax[1].set_xticks([])
 
     plt.tight_layout()
-    plt.savefig(f"{PLOT_DIR}/{name}.pdf", dpi=400)
-    plt.show()
+    path = f"{PLOT_DIR}/{name}.pdf"
+    plt.savefig(path, dpi=400)
+    os.system(f"pdfcrop {path} {path}")
+    #plt.show()
 
 
 def plot_sequential_scan():

@@ -39,6 +39,8 @@ def plot_cache_references(data, column_idx, name):
     fix, ax = plt.subplots(nrows=1, sharex=True, ncols=len(column_idx))
 
     for i in range(len(column_idx)):
+        if i != 1:
+            continue
         std_data = []
         sdsl_data = []
         sdsl_byte_aligned_data = []
@@ -62,6 +64,17 @@ def plot_cache_references(data, column_idx, name):
         print(sdsl_data)
         print(sdsl_byte_aligned_data)
 
+        """
+        ratio = []
+        for j in range(len(std_data)):
+            if sdsl_data[j] != 0:
+                ratio.append((sdsl_data[j] / std_data[j], num_elements[j], std_data[j], sdsl_data[j]))
+
+        print(ratio)
+        for r in ratio:
+            print(r)
+        """
+
         ax[i].plot(num_elements, sdsl_data, label="sdsl")
         ax[i].plot(num_elements, sdsl_byte_aligned_data, label="sdsl byte aligned")
         ax[i].plot(num_elements, std_data, label="std")
@@ -82,17 +95,19 @@ def plot_cache_references(data, column_idx, name):
     #ax.set_ylabel(name)
     #ax.set_xlabel("Number of Elements")
     #plt.legend()
+
     plt.tight_layout()
-    #filename = name.lower().replace(" ", "_")
-    plt.savefig(f"plots/llc-instructions-ipc.pdf")
-    os.system("pdfcrop plots/llc-instructions-ipc.pdf plots/llc-instructions-ipc.pdf")
-    #plt.show()
+    filename = name.lower().replace(" ", "_")
+    path = f"plots/{filename}.pdf"
+    plt.savefig(path)
+    os.system(f"pdfcrop {path} {path}")
+    plt.show()
 
 
 if __name__ == "__main__":
     csv_data = read_csv_file("../sdsl_tests/perf_results.csv")
-    for row in csv_data:
-        print(row)
+    #for row in csv_data:
+    #    print(row)
 
     param_idx = get_idx_for_columns(csv_data)
     print(param_idx)

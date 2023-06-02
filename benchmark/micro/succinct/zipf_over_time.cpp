@@ -43,8 +43,8 @@ void Load(DuckDBBenchmarkState *state) override {
 		}
 	}
 
-	auto& db_manager = state->db.instance->GetDatabaseManager();
-	db_manager.GetSystemCatalog().GetColumnSegmentCatalog()->CompactAllSegments();
+	//auto& db_manager = state->db.instance->GetDatabaseManager();
+	//db_manager.GetSystemCatalog().GetColumnSegmentCatalog()->CompactAllSegments();
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {

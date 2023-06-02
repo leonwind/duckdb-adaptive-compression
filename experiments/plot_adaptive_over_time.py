@@ -21,7 +21,9 @@ def read_file(filename):
         qps_per_s.append((t / 60, int(qps)))
         memory_per_s.append((t / 60, int(memory) / 10**9))
         t += 1
-    
+
+    qps = [q[1] for q in qps_per_s]
+    print("Avg qps:", sum(qps) / len(qps)) 
     return qps_per_s, memory_per_s
 
 
@@ -52,7 +54,7 @@ def compare(results, ylabel):
 
     plt.ylabel(ylabel)
     plt.xlabel("Time [min]")
-    #plt.legend()
+    plt.legend()
     plt.tight_layout()
     
     filename = ylabel.replace(" ", "_") + ".pdf"
@@ -63,22 +65,13 @@ def compare(results, ylabel):
 
 
 if __name__ == "__main__":
-    succinct_adaptive_timeseries = read_file("data/adaptive/delta/succinct_adaptive_zipf.log")
-    succinct_not_adaptive_timeseries = read_file("data/adaptive/delta/succinct_non_adaptive_zipf.log")
-    not_succinct_timeseries = read_file("data/adaptive/delta/non_succinct_zipf.log")
-    #compare([not_succinct_timeseries[0], succinct_adaptive_timeseries[0], succinct_not_adaptive_timeseries[0]], "QPS")
-    #compare([not_succinct_timeseries[1], succinct_adaptive_timeseries[1], succinct_not_adaptive_timeseries[1]], "Memory [GB]")
+    succinct_adaptive_timeseries = read_file("data/adaptive/update/succinct_adaptive_zipf.log")
+    succinct_not_adaptive_timeseries = read_file("data/adaptive/update/succinct_non_adaptive_zipf.log")
+    not_succinct_timeseries = read_file("data/adaptive/update/non_succinct_zipf.log")
 
-    #succinct_adaptive_timeseries = read_file("../succinct_adaptive.log")
-    #succinct_not_adaptive_timeseries = read_file("../succinct_not_adaptive.log")
-    #not_succinct_timeseries = read_file("../non_succinct.log")
+    #succinct_adaptive_timeseries = read_file("data/adaptive/delta/succinct_adaptive_zipf.log")
+    #succinct_not_adaptive_timeseries = read_file("data/adaptive/delta/succinct_non_adaptive_zipf.log")
+    #not_succinct_timeseries = read_file("data/adaptive/delta/non_succinct_zipf.log")
+
     compare([not_succinct_timeseries[0], succinct_adaptive_timeseries[0], succinct_not_adaptive_timeseries[0]], "QPS")
     compare([not_succinct_timeseries[1], succinct_adaptive_timeseries[1], succinct_not_adaptive_timeseries[1]], "Size [GB]")
-
-    #compare([not_succinct_timeseries[1], succinct_adaptive_timeseries[1], succinct_not_adaptive_timeseries[1]], "Size [Bytes]")
-
-    #not_succinct = read_file("data/non_succinct_zipf_changing.log")
-    #succinct_adaptive = read_file("data/succinct_zipf_changing.log")
-    #succinct_not_adaptive = read_file("data/succinct_not_adaptive_zipf_changing.log")
-    #test = read_file("data/test_succinct_not_adaptive_zipf_changing.log")
-    #compare_qps([not_succinct[0], succinct_adaptive[0], succinct_not_adaptive[0]])

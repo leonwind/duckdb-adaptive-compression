@@ -53,14 +53,16 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 	double compression_rate = 0.90;
 	//bool finished = false;
 	//size_t i = 0;
-	std::cout << "Start background compaction" << std::endl;
+	//std::cout << "Start background compaction" << std::endl;
 
 	while (true) {
 		std::this_thread::sleep_for(std::chrono::seconds(10));
 
+		/*
 		if (event_counter < 50000) {
 			continue;
 		}
+*/
 
 		idx_t curr_counter{event_counter};
 		std::vector<std::pair<ColumnSegment*, AccessStatistics>> v(statistics.begin(), statistics.end());
@@ -70,7 +72,7 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 					  return left.second < right.second;
 				  });
 
-		Print();
+		//Print();
 
 		float cum_sum = 0;
 		curr_counter = v.size();

@@ -44,6 +44,7 @@ private:
 	idx_t event_counter;
 	bool background_thread_started;
 	bool background_compaction_enabled;
+	idx_t skip_length_mask = 8 - 1;
 };
 
 } // namespace duckdb

@@ -89,6 +89,7 @@ def _plot(data, ylabel, name):
 
 def _plot_side_by_side(perf_data, mem_data, name):
     fig, ax = plt.subplots(nrows=1, ncols=2)
+    print(perf_data, mem_data)
     for group in GROUPS:
         if group in perf_data:
             ax[0].bar(group, perf_data[group], color=COLORS[group])
@@ -102,11 +103,22 @@ def _plot_side_by_side(perf_data, mem_data, name):
     ax[0].set_xticks([])
     ax[1].set_xticks([])
 
+    """
+    for i, bars in enumerate(ax[0].containers):
+        #if i == 0:
+        #    ax[0].bar_label(bars, fmt='%.1f')
+        #else:
+        ax[0].bar_label(bars, label_type='center', fmt='%.1f')
+
+    for bars in ax[1].containers:
+        ax[1].bar_label(bars, label_type='center', fmt='%.1f')
+    """
+
     plt.tight_layout()
     path = f"{PLOT_DIR}/{name}.pdf"
     plt.savefig(path, dpi=400)
     os.system(f"pdfcrop {path} {path}")
-    #plt.show()
+    plt.show()
 
 
 def plot_sequential_scan():

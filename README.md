@@ -23,3 +23,28 @@ Our benchmarks are in `/benchmark/micro/succinct` and can be run from the build 
 ```shell
 benchmark/benchmark_runner SuccinctZipfDistribution
 ```
+
+### Build issue: Linking SDSL with DuckDB
+Some systems may experience issues linking the SDSL with DuckDB due to the error 
+```
+can not be used when making a shared object; recompile with -fPIC
+```
+
+One fix is by adding the flag `-DCMAKE_POSITION_INDEPENDENT_CODE=ON` in `third_party/sdsl-lite/install.sh` in the line
+
+```
+cmake -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_INSTALL_PREFIX="${SDSL_INSTALL_PREFIX}" .. # run cmake
+```
+
+resulting in 
+
+```
+cmake -DCMAKE_POSITION_INDEPENDENT_CODE=ON -DCMAKE_VERBOSE_MAKEFILE=ON -DCMAKE_INSTALL_PREFIX="${SDSL_INSTALL_PREFIX}" .. # run cmake 
+```
+
+After adding the flag, re-running the `install.sh` script is necessary:
+
+```
+cd third_party/sdsl-lite
+./install.sh ../sdsl
+```

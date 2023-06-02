@@ -1,6 +1,4 @@
-mkdir third_party/sdsl-lite -p
-
+git clone https://github.com/simongog/sdsl-lite.git
 cd third_party/sdsl-lite
-git clone git@github.com:simongog/sdsl-lite.git
 
 ./install.sh ../sdsl

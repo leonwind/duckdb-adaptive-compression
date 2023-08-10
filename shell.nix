@@ -9,7 +9,7 @@ pkgs.mkShell {
         cmake
         gtest
         fmt
-        linuxKernel.packages.linux_5_18.perf
+        linuxKernel.packages.linux_zen.perf
         valgrind
         tbb
         openssl

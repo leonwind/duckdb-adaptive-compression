@@ -420,6 +420,7 @@ void ColumnSegment::UncompressSuccinct() {
 	auto &buffer_manager = BufferManager::GetBufferManager(db);
 
 	shared_ptr<BlockHandle> uncompressed_block;
+	std::cout << "Allocate block of size " << segment_size << std::endl;
 	if (segment_size < Storage::BLOCK_SIZE) {
 		uncompressed_block = buffer_manager.RegisterSmallMemory(segment_size);
 	} else {

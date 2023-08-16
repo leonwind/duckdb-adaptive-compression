@@ -12,7 +12,7 @@ using namespace duckdb;
 
 #define NUM_INSERTS 1000000 /// 1 Billion
 #define NUM_LOOKUPS 100000 /// 100K
-#define ZIPF_SKEW 1
+#define ZIPF_SKEW 0.0
 #define DURATION std::chrono::seconds(10)
 
 DUCKDB_BENCHMARK(SuccinctZipfDifferentSkews, "[succinct]")
@@ -43,8 +43,18 @@ void Load(DuckDBBenchmarkState *state) override {
 		}
 	}
 
-	//auto& db_manager = state->db.instance->GetDatabaseManager();
-	//db_manager.GetSystemCatalog().GetColumnSegmentCatalog()->CompactAllSegments();
+	/*
+	std::vector<std::pair<uint32_t, uint32_t>> v(frequencies.begin(), frequencies.end());
+	std::sort(v.begin(), v.end(),
+				  [](std::pair<uint32_t, uint32_t>& left,
+					 std::pair<uint32_t, uint32_t>& right) {
+					  return left.second < right.second;
+				  });
+
+	for (auto c: v) {
+		std::cout << c.first << ", " << c.second << std::endl;
+	}
+	*/
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
@@ -128,8 +138,8 @@ void Load(DuckDBBenchmarkState *state) override {
 		}
 	}
 
-	//auto& db_manager = state->db.instance->GetDatabaseManager();
-	//db_manager.GetSystemCatalog().GetColumnSegmentCatalog()->CompactAllSegments();
+	auto& db_manager = state->db.instance->GetDatabaseManager();
+	db_manager.GetSystemCatalog().GetColumnSegmentCatalog()->CompactAllSegments();
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
@@ -212,9 +222,6 @@ void Load(DuckDBBenchmarkState *state) override {
 			frequencies[curr] += 1;
 		}
 	}
-
-	//auto& db_manager = state->db.instance->GetDatabaseManager();
-	//db_manager.GetSystemCatalog().GetColumnSegmentCatalog()->CompactAllSegments();
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {

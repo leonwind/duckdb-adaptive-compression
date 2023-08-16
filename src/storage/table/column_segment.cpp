@@ -255,7 +255,9 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 }
 
 void ColumnSegment::Compact() {
+	bit_compression_lock.lock();
 	if (compacted || num_elements == 0 || !succinct_possible) {
+		bit_compression_lock.unlock();
 		return;
 	}
 	//std::cout << "Start compacting" << std::endl;
@@ -263,13 +265,13 @@ void ColumnSegment::Compact() {
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		size_t size_before_compress = sdsl::size_in_bytes(succinct_vec);
 
-		bit_compression_lock.lock();
 		BitCompressFromSuccinct();
-		bit_compression_lock.unlock();
 
 		//std::cout << "Size before compress: " << size_before_compress << ", after: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
 		int64_t diff_size = size_before_compress - sdsl::size_in_bytes(succinct_vec);
 		BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
+
+		bit_compression_lock.unlock();
 		return;
 	}
 
@@ -281,7 +283,6 @@ void ColumnSegment::Compact() {
 	//std::cout << "Size before compress: " << size_before_compress << ", segment size: " << segment_size << std::endl;
 
 	BitCompressFromUncompressed();
-
 	//BufferManager::GetBufferManager(db).Unpin(block);
 
 	idx_t size_after_compress = sdsl::size_in_bytes(succinct_vec);
@@ -291,12 +292,15 @@ void ColumnSegment::Compact() {
 	// FIXME: Check if we need to update segment_size??
 	//segment_size = size_after_compress;
 	//std::cout << "Finish compacting" << std::endl;
+	bit_compression_lock.unlock();
 }
 
 void ColumnSegment::Uncompact() {
-	if (!compacted || function->type != CompressionType::COMPRESSION_SUCCINCT) {
+	if (!compacted || !function || function->type != CompressionType::COMPRESSION_SUCCINCT) {
 		return;
 	}
+
+	std::cout << "Uncompact segment" << std::endl;
 
 	size_t compressed_size = sdsl::size_in_bytes(succinct_vec);
 
@@ -341,6 +345,7 @@ void ColumnSegment::BitCompressFromSuccinct() {
         succinct_vec.bit_resize(count * min_width);
         succinct_vec.width(min_width);
     }
+
 	SetBitCompressed();
 	//std::cout << "End bit compressing from succinct" << std::endl;
 }
@@ -349,7 +354,9 @@ void ColumnSegment::BitCompressFromUncompressed() {
 	//std::cout << "Start bit compress from uncompressed" << std::endl;
 	//auto old_handle = .Pin(block);
 	//uint8_t* old_data = old_handle.Ptr();
-	uint8_t* uncompressed_ptr = BufferManager::GetBufferManager(db).Pin(block).Ptr();
+
+	auto old_handle = BufferManager::GetBufferManager(db).Pin(block);
+	auto uncompressed_ptr = old_handle.Ptr();
 
 	uint32_t min = UINT32_MAX; //GetMinFactor();
 	uint32_t max = 0; //GetMax() - GetMinFactor();
@@ -358,6 +365,7 @@ void ColumnSegment::BitCompressFromUncompressed() {
 		memcpy(/* dest= */ &curr,
 		       /* src= */ uncompressed_ptr + i * sizeof(curr),
 		       /* n= */ sizeof(curr));
+
 		min = std::min(min, curr);
 		max = std::max(max, curr);
 	}
@@ -408,10 +416,12 @@ void ColumnSegment::BitCompressFromUncompressed() {
         succinct_vec.width(min_width);
     }
 
-	bit_compression_lock.lock();
+	//bit_compression_lock.lock();
 	function = DBConfig::GetConfig(db).GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
 	function->type = CompressionType::COMPRESSION_SUCCINCT;
-	bit_compression_lock.unlock();
+	//bit_compression_lock.unlock();
+	//old_handle.Destroy();
+	//BufferManager::GetBufferManager(db).Unpin(block);
 
 	SetBitCompressed();
 }
@@ -429,7 +439,9 @@ void ColumnSegment::UncompressSuccinct() {
 
 	this->block_id = uncompressed_block->BlockId();
 	this->block = move(uncompressed_block);
-	uint8_t* data_ptr = buffer_manager.Pin(block).Ptr();
+
+	auto handle = buffer_manager.Pin(block);
+	uint8_t* data_ptr = handle.Ptr();
 
 	//std::cout << "Starting uncompressing for loop" << std::endl;
 	//std::cout << "Succinct vec size: " << succinct_vec.size() << std::endl;
@@ -458,6 +470,7 @@ void ColumnSegment::UncompressSuccinct() {
 	bit_compression_lock.lock();
 	succinct_vec.resize(0);
 	bit_compression_lock.unlock();
+	//buffer_manager.Unpin(block);
 	//std::cout << "End uncompressing" << std::endl;
 }
 

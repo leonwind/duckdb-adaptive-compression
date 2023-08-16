@@ -10,7 +10,7 @@
 
 using namespace duckdb;
 
-#define NUM_INSERTS 1000000000 // 1 Billion
+#define NUM_INSERTS 50000000 // 1 Billion
 #define NUM_LOOKUPS 50000
 #define ZIPF_K 1
 #define DURATION std::chrono::seconds(60)
@@ -72,7 +72,6 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 			std::cout << transaction_count << ", " << memory << std::endl;
 			transaction_count = 0;
 			qps_start = std::chrono::steady_clock::now();
-
 		}
 
 		if (i >= state->data.size()) {

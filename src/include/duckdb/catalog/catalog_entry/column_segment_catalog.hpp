@@ -2,6 +2,7 @@
 
 #include "duckdb.h"
 
+#include <iostream>
 #include <atomic>
 #include <unordered_map>
 
@@ -28,6 +29,7 @@ public:
 	[[noreturn]] void CompressLowestKSegments();
 
 	inline void EnableBackgroundThreadCompaction() {
+		std::cout << "Enable background compaction??" << std::endl;
 		background_compaction_enabled = true;
 	}
 

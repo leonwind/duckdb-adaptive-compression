@@ -57,12 +57,12 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 
 	while (true) {
 		std::this_thread::sleep_for(std::chrono::seconds(10));
-
+		std::cout << "COMPRESS " << statistics.size() << " segments" << std::endl;
 		/*
 		if (event_counter < 50000) {
 			continue;
 		}
-*/
+		*/
 
 		idx_t curr_counter{event_counter};
 		std::vector<std::pair<ColumnSegment*, AccessStatistics>> v(statistics.begin(), statistics.end());
@@ -71,7 +71,6 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 					 std::pair<ColumnSegment*, AccessStatistics>& right) {
 					  return left.second < right.second;
 				  });
-
 		//Print();
 
 		float cum_sum = 0;
@@ -81,10 +80,10 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 			//cum_sum += iter->second.num_reads;
 
 			if (cum_sum / curr_counter < compression_rate) {
-				// Compact all the least accessed segments with a ratio of #compression_rate.
+				//! Compact all the least accessed segments with a ratio of #compression_rate.
 				iter->first->Compact();
 			} else {
-				// Uncompact / leave uncompressed all frequently accessed segments.
+				//! Uncompact / leave uncompressed all frequently accessed segments.
 				iter->first->Uncompact();
 			}
 
@@ -132,14 +131,26 @@ void ColumnSegmentCatalog::Print() {
 	float cum_sum = 0.0;
 	for (auto& curr : v) {
 		cum_sum += curr.second.num_reads;
+		if (cum_sum == 0.0) {
+			continue;
+		}
+
 		std::cout << curr.first << ": "
 		          << curr.second.num_reads << "/" << curr_counter
 		          << ", compacted: "  << curr.first->IsBitCompressed()
 		          << ", cum ratio: " << cum_sum / curr_counter
 		          << ", size: " << curr.first->GetDataSize()
-		          << ", ratio: " << double(curr.first->GetDataSize()) / curr.first->SegmentSize()
-		          << ", stats: " << curr.first->stats.statistics->ToString()
-		          << std::endl;
+		          << ", ratio: " << double(curr.first->GetDataSize()) / curr.first->SegmentSize();
+
+		/*
+		if (curr.first->stats.statistics) {
+			std::cout << ", stats: " << curr.first->stats.statistics->ToString();
+		}
+		 */
+
+		std::cout << std::endl;
+		          //<< ", stats: " << curr.first->stats.statistics->ToString()
+		          //<< std::endl;
 
 		segment_sizes += curr.first->SegmentSize();
 		compressed_size += curr.first->GetDataSize();

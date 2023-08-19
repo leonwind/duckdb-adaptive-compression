@@ -26,6 +26,7 @@ AttachedDatabase::AttachedDatabase(DatabaseInstance &db, Catalog &catalog_p, str
 	storage = make_unique<SingleFileStorageManager>(*this, move(file_path_p), access_mode == AccessMode::READ_ONLY);
 	catalog = make_unique<Catalog>(*this);
 	transaction_manager = make_unique<TransactionManager>(*this);
+	column_segment_catalog = make_unique<ColumnSegmentCatalog>();
 	internal = true;
 }
 
@@ -49,6 +50,10 @@ AttachedDatabase::~AttachedDatabase() {
 		}
 	} catch (...) {
 	}
+}
+
+ColumnSegmentCatalog& AttachedDatabase::GetColumnSegmentCatalog() {
+	return *column_segment_catalog.get();
 }
 
 bool AttachedDatabase::IsSystem() const {

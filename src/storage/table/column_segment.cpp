@@ -157,14 +157,13 @@ void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &resul
 		Compact();
 	}
 
-	bit_compression_lock.lock();
+	lock_guard<mutex> lock(bit_compression_lock);
 	if (force_reinitializing_scan_state) {
 		InitializeScan(state);
 		force_reinitializing_scan_state = false;
 	}
 
 	function->scan_vector(*this, state, scan_count, result);
-	bit_compression_lock.unlock();
 }
 
 void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector &result, idx_t result_offset) {
@@ -174,14 +173,13 @@ void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector
 		Compact();
 	}
 
-	bit_compression_lock.lock();
+	lock_guard<mutex> lock(bit_compression_lock);
 	if (force_reinitializing_scan_state) {
 		InitializeScan(state);
 		force_reinitializing_scan_state = false;
 	}
 
 	function->scan_partial(*this, state, scan_count, result, result_offset);
-	bit_compression_lock.unlock();
 }
 
 //===--------------------------------------------------------------------===//
@@ -202,9 +200,11 @@ idx_t  ColumnSegment::GetDataSize() const {
 	if (!is_data_segment) {
 		return 0;
 	}
+
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		return sdsl::size_in_bytes(succinct_vec);
 	}
+
 	return segment_size;
 }
 
@@ -212,6 +212,7 @@ idx_t ColumnSegment::SuccinctSize() const {
 	if (function->type == CompressionType::COMPRESSION_SUCCINCT) {
 		return sdsl::size_in_bytes(succinct_vec);
 	}
+
 	return 0;
 }
 
@@ -244,6 +245,10 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 		throw InternalException("Attempting to append to a segment without append method");
 	}
 
+	if (compacted) {
+		Uncompact();
+	}
+
 	idx_t copy_count = function->append(*state.append_state, *this, stats, append_data, offset, count);
 	num_elements += count;
 
@@ -255,9 +260,9 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 }
 
 void ColumnSegment::Compact() {
-	bit_compression_lock.lock();
+	lock_guard<mutex> lock(bit_compression_lock);
+
 	if (compacted || num_elements == 0 || !succinct_possible) {
-		bit_compression_lock.unlock();
 		return;
 	}
 	//std::cout << "Start compacting" << std::endl;
@@ -266,12 +271,12 @@ void ColumnSegment::Compact() {
 		size_t size_before_compress = sdsl::size_in_bytes(succinct_vec);
 
 		BitCompressFromSuccinct();
+		//compacted = true;
 
 		//std::cout << "Size before compress: " << size_before_compress << ", after: " << sdsl::size_in_bytes(succinct_vec) << std::endl;
 		int64_t diff_size = size_before_compress - sdsl::size_in_bytes(succinct_vec);
 		BufferManager::GetBufferManager(db).AddToDataSize(-diff_size);
 
-		bit_compression_lock.unlock();
 		return;
 	}
 
@@ -283,7 +288,7 @@ void ColumnSegment::Compact() {
 	//std::cout << "Size before compress: " << size_before_compress << ", segment size: " << segment_size << std::endl;
 
 	BitCompressFromUncompressed();
-	//BufferManager::GetBufferManager(db).Unpin(block);
+	//compacted = true;
 
 	idx_t size_after_compress = sdsl::size_in_bytes(succinct_vec);
 	int64_t diff_size = segment_size - size_after_compress;
@@ -292,10 +297,11 @@ void ColumnSegment::Compact() {
 	// FIXME: Check if we need to update segment_size??
 	//segment_size = size_after_compress;
 	//std::cout << "Finish compacting" << std::endl;
-	bit_compression_lock.unlock();
 }
 
 void ColumnSegment::Uncompact() {
+	lock_guard<mutex> lock(bit_compression_lock);
+
 	if (!compacted || !function || function->type != CompressionType::COMPRESSION_SUCCINCT) {
 		return;
 	}
@@ -305,12 +311,14 @@ void ColumnSegment::Uncompact() {
 	size_t compressed_size = sdsl::size_in_bytes(succinct_vec);
 
 	UncompressSuccinct();
+	//compacted = false;
 	force_reinitializing_scan_state = true;
 
 	// TODO: Check if that makes sense
 	size_t uncompressed_size = segment_size;
 	int64_t diff_size = uncompressed_size - compressed_size;
 	BufferManager::GetBufferManager(db).AddToDataSize(diff_size);
+
 }
 
 void ColumnSegment::BitCompressFromSuccinct() {
@@ -351,11 +359,15 @@ void ColumnSegment::BitCompressFromSuccinct() {
 }
 
 void ColumnSegment::BitCompressFromUncompressed() {
-	//std::cout << "Start bit compress from uncompressed" << std::endl;
-	//auto old_handle = .Pin(block);
-	//uint8_t* old_data = old_handle.Ptr();
+	std::cout << "Start bit compress from uncompressed " << this << std::endl;
+	std::cout << "Is compacted: " << compacted
+	      	  << ", size: " << segment_size
+	          << ", type: " << type.ToString()
+			  << std::endl;
+	std::cout << std::endl;
 
-	auto old_handle = BufferManager::GetBufferManager(db).Pin(block);
+	auto& buffer_manager = BufferManager::GetBufferManager(db);
+	auto old_handle = buffer_manager.Pin(block);
 	auto uncompressed_ptr = old_handle.Ptr();
 
 	uint32_t min = UINT32_MAX; //GetMinFactor();
@@ -369,6 +381,7 @@ void ColumnSegment::BitCompressFromUncompressed() {
 		min = std::min(min, curr);
 		max = std::max(max, curr);
 	}
+
 	/*
 	std::cout << "Min: " << min
 	    	  << ", Max: " << max
@@ -414,20 +427,18 @@ void ColumnSegment::BitCompressFromUncompressed() {
 
         succinct_vec.bit_resize(count * min_width);
         succinct_vec.width(min_width);
+
+		old_handle.Destroy();
     }
 
-	//bit_compression_lock.lock();
 	function = DBConfig::GetConfig(db).GetCompressionFunction(CompressionType::COMPRESSION_SUCCINCT, type.InternalType());
 	function->type = CompressionType::COMPRESSION_SUCCINCT;
-	//bit_compression_lock.unlock();
-	//old_handle.Destroy();
-	//BufferManager::GetBufferManager(db).Unpin(block);
 
 	SetBitCompressed();
 }
 
 void ColumnSegment::UncompressSuccinct() {
-	auto &buffer_manager = BufferManager::GetBufferManager(db);
+	auto& buffer_manager = BufferManager::GetBufferManager(db);
 
 	shared_ptr<BlockHandle> uncompressed_block;
 	std::cout << "Allocate block of size " << segment_size << std::endl;
@@ -467,9 +478,7 @@ void ColumnSegment::UncompressSuccinct() {
 	function->type = CompressionType::COMPRESSION_UNCOMPRESSED;
 	SetBitUncompressed();
 
-	bit_compression_lock.lock();
 	succinct_vec.resize(0);
-	bit_compression_lock.unlock();
 	//buffer_manager.Unpin(block);
 	//std::cout << "End uncompressing" << std::endl;
 }

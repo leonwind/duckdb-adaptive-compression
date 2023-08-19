@@ -37,23 +37,26 @@ void Load(DuckDBBenchmarkState *state) override {
 	auto user_ids = ParallelLoadData<uint64_t>(user_ids_filename);
 	Appender appender(state->conn, "t1");
 
-	size_t i = 0;
+	size_t c = 0;
 	for (auto id: user_ids) {
 		appender.BeginRow();
-		appender.Append<uint64_t>(i++);
+		appender.Append<uint64_t>(id);
 		appender.EndRow();
+
+		if (c++ >= 40000000) {
+			break;
+		}
 	}
 	appender.Close();
 
 	std::cout << "Finished insertion of " << user_ids.size() << " entries" << std::endl;
 
-	for (const auto &workload: {workload_0_path, workload_1_path, workload_2_path}) {
+	for (const auto &workload: {workload_0_path, /* workload_1_path, workload_2_path */}) {
 		state->workloads.push_back(ParallelLoadData<Query<uint64_t>>(workload));
 	}
 }
 
 void RunBenchmark(DuckDBBenchmarkState *state) override {
-	size_t i = 0;
 	size_t progress_step = 10000;
 	auto& buffer_manager = state->db.instance->GetBufferManager();
 
@@ -64,17 +67,37 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 		for (const auto& query: workload) {
 			state->conn.Query("BEGIN TRANSACTION");
 
-			const auto query_string = "SELECT i FROM t1 where i == " + std::to_string(j);
-			state->result = state->conn.Query(query_string);
+			const auto select_query =
+			    "SELECT i FROM t1 where i == " + std::to_string(query.key);
+			auto result = state->conn.Query(select_query);
+
 			state->conn.Query("COMMIT");
+
+			if (!result->FetchRaw()) {
+				state->conn.Query("BEGIN TRANSACTION");
+
+				const auto insert_query =
+				    "INSERT INTO t1 values (" + std::to_string(query.key) + ");";
+				state->conn.Query(insert_query);
+
+				state->conn.Query("COMMIT");
+
+				std::cout << "Inserted new value " << query.key << std::endl;
+
+				result = state->conn.Query(select_query);
+				if (!result->FetchRaw()) {
+					std::cout << "Value still does not exist???" << std::endl;
+				}
+
+			}
 
 			if (j % progress_step == 0) {
 				std::cout << "Queried: " << j
 				          << ", Curr memory: " << buffer_manager.GetUsedMemory()
 				          << std::endl;
 			}
-
 			j++;
+
 		}
 	}
 }

@@ -10,10 +10,22 @@ ColumnSegmentCatalog::ColumnSegmentCatalog():
       background_compaction_enabled(false) {
 }
 
+void ColumnSegmentCatalog::EnableBackgroundThreadCompaction() {
+	if (!background_compaction_enabled) {
+		background_compaction_enabled = true;
+		std::cout << "START BACKGROUND COMPACTION at " << this << std::endl;
+
+		background_thread_started = true;
+		std::thread t(&ColumnSegmentCatalog::CompressLowestKSegments, this);
+		t.detach();
+	}
+}
+
 void ColumnSegmentCatalog::AddColumnSegment(ColumnSegment* segment) {
 	if (segment->is_data_segment) {
 		statistics[segment] = AccessStatistics{/* num_reads= */ 0};
 	}
+
 	//std::cout << "Add segment " << &segment << " to access statistics" << std::endl;
 	//std::cout << "This pointer in AddColumnSegment: " << this << std::endl;
 }
@@ -21,12 +33,6 @@ void ColumnSegmentCatalog::AddColumnSegment(ColumnSegment* segment) {
 void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 	if (segment == nullptr || !segment->is_data_segment) {
 		return;
-	}
-
-	if (background_compaction_enabled && !background_thread_started) {
-		background_thread_started = true;
-		std::thread t(&ColumnSegmentCatalog::CompressLowestKSegments, this);
-		t.detach();
 	}
 
 	if (statistics.find(segment) == statistics.end()) {
@@ -96,6 +102,8 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 		//std::cout << "\nFINISHED COMPACTION ROUND\n" << std::endl;
 		//std::cout << "Num segments: " << v.size() << std::endl;
 	}
+
+	std::cout << "\n\n\n#####AFTER WHILE TRUE LOOP??######\n\n\n" << std::endl;
 
 	//Print();
 

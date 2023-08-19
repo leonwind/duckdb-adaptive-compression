@@ -28,10 +28,7 @@ public:
 
 	[[noreturn]] void CompressLowestKSegments();
 
-	inline void EnableBackgroundThreadCompaction() {
-		std::cout << "Enable background compaction??" << std::endl;
-		background_compaction_enabled = true;
-	}
+	void EnableBackgroundThreadCompaction();
 
 	inline bool BackgroundCompactionEnabled() {
 		return background_compaction_enabled;

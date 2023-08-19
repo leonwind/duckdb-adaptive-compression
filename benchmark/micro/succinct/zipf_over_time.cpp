@@ -10,8 +10,8 @@
 
 using namespace duckdb;
 
-#define NUM_INSERTS 50000000 // 1 Billion
-#define NUM_LOOKUPS 50000
+#define NUM_INSERTS 100000000 // 1 Billion
+#define NUM_LOOKUPS 100000
 #define ZIPF_K 1
 #define DURATION std::chrono::seconds(60)
 

@@ -43,9 +43,11 @@ void Load(DuckDBBenchmarkState *state) override {
 		appender.Append<uint64_t>(id);
 		appender.EndRow();
 
+		/*
 		if (c++ >= 40000000) {
 			break;
 		}
+		 */
 	}
 
 	/*

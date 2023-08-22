@@ -47,6 +47,15 @@ void Load(DuckDBBenchmarkState *state) override {
 			break;
 		}
 	}
+
+	/*
+	for (size_t i = 0; i < 100; ++i) {
+		appender.BeginRow();
+		appender.Append<uint64_t>(100000 + i);
+		appender.EndRow();
+	}
+	*/
+
 	appender.Close();
 
 	std::cout << "Finished insertion of " << user_ids.size() << " entries" << std::endl;
@@ -88,8 +97,8 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 				if (!result->FetchRaw()) {
 					std::cout << "Value still does not exist???" << std::endl;
 				}
-
 			}
+
 
 			if (j % progress_step == 0) {
 				std::cout << "Queried: " << j

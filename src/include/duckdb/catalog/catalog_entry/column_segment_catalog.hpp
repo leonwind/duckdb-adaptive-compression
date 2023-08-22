@@ -24,6 +24,8 @@ public:
 
 	void AddColumnSegment(ColumnSegment* segment);
 	void AddReadAccess(ColumnSegment* segment);
+	void RemoveColumnSegment(ColumnSegment* segment);
+
 	void Print();
 
 	[[noreturn]] void CompressLowestKSegments();

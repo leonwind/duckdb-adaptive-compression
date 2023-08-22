@@ -30,8 +30,13 @@ void ColumnSegmentCatalog::AddColumnSegment(ColumnSegment* segment) {
 	//std::cout << "This pointer in AddColumnSegment: " << this << std::endl;
 }
 
+void ColumnSegmentCatalog::RemoveColumnSegment(ColumnSegment* segment) {
+	statistics.erase(segment);
+}
+
 void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 	if (segment == nullptr || !segment->is_data_segment) {
+		//std::cout << "Add read access but early return" << std::endl;
 		return;
 	}
 
@@ -64,6 +69,7 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 	while (true) {
 		std::this_thread::sleep_for(std::chrono::seconds(10));
 		std::cout << "COMPRESS " << statistics.size() << " segments" << std::endl;
+
 		/*
 		if (event_counter < 50000) {
 			continue;
@@ -77,6 +83,7 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 					 std::pair<ColumnSegment*, AccessStatistics>& right) {
 					  return left.second < right.second;
 				  });
+
 		//Print();
 
 		float cum_sum = 0;
@@ -87,10 +94,14 @@ void ColumnSegmentCatalog::CompressLowestKSegments() {
 
 			if (cum_sum / curr_counter < compression_rate) {
 				//! Compact all the least accessed segments with a ratio of #compression_rate.
+				//std::cout << "Before compact" << std::endl;
 				iter->first->Compact();
+				//std::cout << "After compact" << std::endl;
 			} else {
 				//! Uncompact / leave uncompressed all frequently accessed segments.
+				//std::cout << "Before uncompact" << std::endl;
 				iter->first->Uncompact();
+				//std::cout << "After uncompact" << std::endl;
 			}
 
 			// Reset statistics to store only access patterns since last compacting iteration.
@@ -148,7 +159,8 @@ void ColumnSegmentCatalog::Print() {
 		          << ", compacted: "  << curr.first->IsBitCompressed()
 		          << ", cum ratio: " << cum_sum / curr_counter
 		          << ", size: " << curr.first->GetDataSize()
-		          << ", ratio: " << double(curr.first->GetDataSize()) / curr.first->SegmentSize();
+		          << ", ratio: " << double(curr.first->GetDataSize()) / curr.first->SegmentSize()
+		          << ", stats: " << curr.first->stats.statistics->ToString();
 
 		/*
 		if (curr.first->stats.statistics) {

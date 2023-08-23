@@ -5,6 +5,7 @@
 #include "duckdb_benchmark_macro.hpp"
 #include "duckdb/storage/table/column_segment.hpp"
 #include "fb_binary_data_loader.cpp"
+#include <random>
 #include <iostream>
 #include <chrono>
 
@@ -27,7 +28,8 @@ const string workload_0_path =   "data/fb_workloads/workload0";
 const string workload_1_path =   "data/fb_workloads/workload1";
 const string workload_2_path =   "data/fb_workloads/workload2";
 
-//std::vector<std::vector<Query<uint64_t>>> workloads;
+const size_t workload_step_size = 100;
+
 
 DUCKDB_BENCHMARK(FBWorkload, "[succinct]")
 void Load(DuckDBBenchmarkState *state) override {
@@ -62,8 +64,11 @@ void Load(DuckDBBenchmarkState *state) override {
 
 	std::cout << "Finished insertion of " << user_ids.size() << " entries" << std::endl;
 
+	auto rng = std::default_random_engine{};
 	for (const auto &workload: {workload_0_path, /* workload_1_path, workload_2_path */}) {
-		state->workloads.push_back(ParallelLoadData<Query<uint64_t>>(workload));
+		auto loaded_workload = ParallelLoadData<Query<uint64_t>>(workload);
+		std::shuffle(std::begin(loaded_workload), std::end(loaded_workload), rng);
+		state->workloads.push_back(loaded_workload);
 	}
 }
 
@@ -75,7 +80,8 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 		//std::cout << "Start workload " << i++ << std::endl;
 
 		size_t j = 0;
-		for (const auto& query: workload) {
+		for (size_t i = 0; i < workload.size(); i += workload_step_size) {
+			auto query = workload[i];
 			state->conn.Query("BEGIN TRANSACTION");
 
 			const auto select_query =
@@ -93,12 +99,14 @@ void RunBenchmark(DuckDBBenchmarkState *state) override {
 
 				state->conn.Query("COMMIT");
 
-				std::cout << "Inserted new value " << query.key << std::endl;
+				//std::cout << "Inserted new value " << query.key << std::endl;
 
+				/*
 				result = state->conn.Query(select_query);
 				if (!result->FetchRaw()) {
 					std::cout << "Value still does not exist???" << std::endl;
 				}
+				 */
 			}
 
 

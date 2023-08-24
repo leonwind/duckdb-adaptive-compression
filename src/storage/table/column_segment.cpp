@@ -155,7 +155,7 @@ void ColumnSegment::Scan(ColumnScanState &state, idx_t scan_count, Vector &resul
 	column_segment_catalog->AddReadAccess(this);
 
 	if (!compacted && !background_compaction_enabled) {
-		std::cout << "\n\nCOMPACT IN FULL SCAN??\n\n" << std::endl;
+		//std::cout << "\n\nCOMPACT IN FULL SCAN??\n\n" << std::endl;
 		Compact();
 	}
 
@@ -173,7 +173,7 @@ void ColumnSegment::ScanPartial(ColumnScanState &state, idx_t scan_count, Vector
 	column_segment_catalog->AddReadAccess(this);
 
 	if (!compacted && !background_compaction_enabled) {
-		std::cout << "\n\nCOMPACT IN PARTIAL SCAN? of segment " << this << std::endl;
+		//std::cout << "\n\nCOMPACT IN PARTIAL SCAN? of segment " << this << std::endl;
 		Compact();
 	}
 
@@ -250,10 +250,12 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 		throw InternalException("Attempting to append to a segment without append method");
 	}
 
+	bool uncompacted = false;
 	if (IsBitCompressed()) {
-		std::cout << "Append but its compacted -> uncompact" << std::endl;
+		//std::cout << "Append but its compacted -> uncompact" << std::endl;
 		Uncompact();
 		InitializeAppend(state);
+		uncompacted = true;
 	}
 
 	//bit_compression_lock.lock();
@@ -261,7 +263,7 @@ idx_t ColumnSegment::Append(ColumnAppendState &state, UnifiedVectorFormat &appen
 	num_elements += count;
 	//bit_compression_lock.unlock();
 
-	if (!compacted && !background_compaction_enabled && num_elements >= succinct_vec.size()) {
+	if (!compacted && !background_compaction_enabled && (num_elements >= succinct_vec.size() || uncompacted)) {
 		Compact();
 	}
 
@@ -290,12 +292,14 @@ void ColumnSegment::Compact() {
 		return;
 	}
 
+	/*
 	std::cout << "Start compacting..." << std::endl;
 	std::cout << "Adress: " << this
 	    	  << ", is compacted: " << compacted
 	      	  << ", size: " << segment_size
 	          << ", type: " << type.ToString()
 			  << std::endl;
+    */
 
 	//! Segment was uncompressed transient and now gets compacted using a succinct representation.
 	succinct_vec.width(type_size * 8);
@@ -314,7 +318,7 @@ void ColumnSegment::Compact() {
 	//segment_size = size_after_compress;
 	//std::cout << "Finish compacting" << std::endl;
 
-	std::cout << "Finished compacting" << std::endl;
+	//std::cout << "Finished compacting" << std::endl;
 }
 
 void ColumnSegment::Uncompact() {
@@ -325,7 +329,7 @@ void ColumnSegment::Uncompact() {
 		return;
 	}
 
-	std::cout << "Start Uncompacting segment" << std::endl;
+	//std::cout << "Start Uncompacting segment" << std::endl;
 
 	size_t compressed_size = sdsl::size_in_bytes(succinct_vec);
 
@@ -338,7 +342,7 @@ void ColumnSegment::Uncompact() {
 	int64_t diff_size = uncompressed_size - compressed_size;
 	BufferManager::GetBufferManager(db).AddToDataSize(diff_size);
 
-	std::cout << "Finished uncompacting" << std::endl;
+	//std::cout << "Finished uncompacting" << std::endl;
 }
 
 void ColumnSegment::BitCompressFromSuccinct() {
@@ -383,13 +387,13 @@ void ColumnSegment::BitCompressFromUncompressed() {
 	auto old_handle = buffer_manager.Pin(block);
 	auto uncompressed_ptr = old_handle.Ptr();
 
-	uint32_t min = UINT32_MAX; //GetMinFactor();
-	uint32_t max = 0; //GetMax() - GetMinFactor();
+	uint64_t min = UINT64_MAX; //GetMinFactor();
+	uint64_t max = 0; //GetMax() - GetMinFactor();
 	for (size_t i = 0; i < count; ++i) {
-		uint32_t curr;
+		uint64_t curr;
 		memcpy(/* dest= */ &curr,
-		       /* src= */ uncompressed_ptr + i * sizeof(curr),
-		       /* n= */ sizeof(curr));
+		       /* src= */ uncompressed_ptr + i * type_size,
+		       /* n= */ type_size);
 
 		min = std::min(min, curr);
 		max = std::max(max, curr);
@@ -401,7 +405,7 @@ void ColumnSegment::BitCompressFromUncompressed() {
 	          << std::endl;
 	          */
 
-	if (max != 0 && min != UINT32_MAX && max > min) {
+	if (max != 0 && min != UINT64_MAX && max > min) {
 		// Delta compression.
 		max -= min;
 	}
@@ -422,16 +426,16 @@ void ColumnSegment::BitCompressFromUncompressed() {
         uint8_t write_offset = 0;
 
         for (size_t i = 0; i < count; ++i) {
-			int32_t x_flat;
+			int64_t x_flat;
 			memcpy(/* dest= */ &x_flat,
-			       /* src= */ uncompressed_ptr + i * sizeof(x_flat),
-			       /* n= */ sizeof(x_flat));
+			       /* src= */ uncompressed_ptr + i * type_size,
+			       /* n= */ type_size);
 
 			//std::cout << "Curr element at " << i << ": " << (int32_t) x_flat << std::endl;
 			//uint64_t x = sdsl::bits::read_int_and_move(read_data, read_offset, old_width);
 			//std::cout << "Compact entry at " << i << " is " << x << std::endl;
 
-			if (min != UINT32_MAX) {
+			if (min != UINT64_MAX) {
 				x_flat -= min;
 			}
 
@@ -455,7 +459,7 @@ void ColumnSegment::UncompressSuccinct() {
 	auto& buffer_manager = BufferManager::GetBufferManager(db);
 
 	shared_ptr<BlockHandle> uncompressed_block;
-	std::cout << "Allocate block of size " << segment_size << std::endl;
+	//std::cout << "Allocate block of size " << segment_size << std::endl;
 	if (segment_size < Storage::BLOCK_SIZE) {
 		uncompressed_block = buffer_manager.RegisterSmallMemory(segment_size);
 	} else {

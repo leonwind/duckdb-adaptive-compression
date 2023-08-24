@@ -66,7 +66,6 @@ void Catalog::Initialize(bool load_builtin) {
 
 	if (!column_segment_catalog->BackgroundCompactionEnabled() &&
 	    DBConfig::GetConfig(db.GetDatabase()).adaptive_succinct_compression_enabled) {
-		std::cout << "START BACKGROUND THREAD" << std::endl;
 	}
 	column_segment_catalog->EnableBackgroundThreadCompaction();
 

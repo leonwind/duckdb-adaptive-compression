@@ -13,7 +13,7 @@ ColumnSegmentCatalog::ColumnSegmentCatalog():
 void ColumnSegmentCatalog::EnableBackgroundThreadCompaction() {
 	if (!background_compaction_enabled) {
 		background_compaction_enabled = true;
-		std::cout << "START BACKGROUND COMPACTION at " << this << std::endl;
+		//std::cout << "START BACKGROUND COMPACTION at " << this << std::endl;
 
 		background_thread_started = true;
 		std::thread t(&ColumnSegmentCatalog::CompressLowestKSegments, this);
@@ -54,6 +54,7 @@ void ColumnSegmentCatalog::AddReadAccess(ColumnSegment* segment) {
 }
 
 void ColumnSegmentCatalog::CompactAllSegments() {
+	std::cout << "Num segments: " << statistics.size() << std::endl;
 	for (auto iter = statistics.begin(); iter != statistics.end(); ++iter) {
 		iter->first->Compact();
 	}

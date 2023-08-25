@@ -28,30 +28,11 @@ def read_file(filename):
         qps_per_s.append((t / 60, int(qps)))
         memory_per_s.append((t / 60, int(memory) / MB))
         t += 1
+    workload_times.append((t - 1) / 60)
 
     qps = [q[1] for q in qps_per_s]
     print("Avg qps:", sum(qps) / len(qps)) 
     return qps_per_s, memory_per_s, workload_times
-
-
-def plot_qps_memory_over_time(qps_per_s, memory_per_s):
-    fig, ax1 = plt.subplots()
-    
-    color = "blue"
-    ax1.set_xlabel("time [s]")
-    ax1.set_ylabel("QPS", color=color)
-    ax1.plot(*zip(*qps_per_s), color=color)
-    ax1.tick_params(axis='y', labelcolor=color)
-
-    ax2 = ax1.twinx()  
-    color = "orange"
-
-    ax2.set_ylabel("Memory", color=color)
-    ax2.plot(*zip(*memory_per_s), color=color)
-    ax2.tick_params(axis='y', labelcolor=color)
-
-    fig.tight_layout()  # otherwise the right y-label is slightly clipped
-    plt.show()
 
 
 def compare(results, workload_times, ylabel):
@@ -63,11 +44,27 @@ def compare(results, workload_times, ylabel):
         for phase, time in enumerate(workload[1:]):
             plt.axvline(x=time, color=_colors[(i + 1) % 3], ls="dashed")
 
-            #plt.text(time, 3000, str(phase + 1),
-            #    ha="center",
-            #    color=_colors[(i + 2) % 3],
-            #    size=7,
-            #    bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec=_colors[(i + 2) % 3]))
+    #plt.text(1.45, 2800, 
+    #    "$w_{1}$",
+    #    ha="center",
+    #    color="black",
+    #    size=4,
+    #    bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec="black"))
+
+    #plt.text(2.9, 2800, 
+    #    "$w_{2}$",
+    #    ha="center",
+    #    color="black",
+    #    size=4,
+    #    bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec="black"))
+
+    #plt.text(4.4, 2800, 
+    #    "$w_{3}$",
+    #    ha="center",
+    #    color="black",
+    #    size=4,
+    #    bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec="black"))
+
 
     plt.ylabel(ylabel)
     plt.xlabel("Time [min]")

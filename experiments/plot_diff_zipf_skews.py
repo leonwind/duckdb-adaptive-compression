@@ -13,6 +13,15 @@ ADAPTIVE_IDX = 0
 SUCCINCT_IDX = 1
 DEFAULT_IDX = 2
 
+COLORS = {
+    "succinct": colors.colors["blue"],
+    "adaptive": colors.colors["red"],
+    "uncompressed": colors.colors["green"]
+}
+
+GB = 10**9
+MB = 10**6
+
 
 def read_data():
     data = {}
@@ -64,17 +73,35 @@ def plot_data(data_dict):
         adaptive.append((curr[0], curr[1][ADAPTIVE_IDX][0]))
         succinct.append((curr[0], curr[1][SUCCINCT_IDX][0]))
         default.append((curr[0], curr[1][DEFAULT_IDX][0]))
-    
-    plt.plot(*zip(*adaptive))
-    plt.plot(*zip(*succinct))
-    plt.plot(*zip(*default))
 
-    plt.xlabel("Skew k")
-    plt.ylabel("QPS")
-    plt.tight_layout()
+    fig, ax = plt.subplots(nrows=1, ncols=2)
+    ax[0].plot(*zip(*adaptive), color=COLORS["adaptive"])
+    ax[0].plot(*zip(*succinct), color=COLORS["succinct"])
+    ax[0].plot(*zip(*default),color=COLORS["uncompressed"])
+
+    ax[0].set_xlabel("Skew factor $k$")
+    ax[0].set_ylabel("QPS")
+
+    final_mem = data[-1]
+    mem_data = [
+        final_mem[1][DEFAULT_IDX][1] / MB,
+        final_mem[1][ADAPTIVE_IDX][1] / MB,
+        final_mem[1][SUCCINCT_IDX][1] / MB
+    ]
+
+    ax[1].bar("Uncompressed", mem_data[0], color=COLORS["uncompressed"])
+    ax[1].bar("Adaptive", mem_data[1],     color=COLORS["adaptive"])
+    ax[1].bar("Succinct", mem_data[2],     color=COLORS["succinct"])
+    ax[1].set_xticks([])
+    ax[1].set_ylabel("Size [MB]")
+
+    for bars in ax[1].containers:
+        ax[1].bar_label(bars, label_type='center', fmt='%.1f')
+
+    fig.tight_layout()
 
     filename = "diff_zipf_skew.pdf"
-    plt.savefig(filename, dpi=400)
+    fig.savefig(filename, dpi=400)
     os.system(f"pdfcrop {filename} {filename}")
 
     plt.show()

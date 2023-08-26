@@ -41,6 +41,8 @@ public:
 	StorageManager &GetStorageManager();
 	Catalog &GetCatalog();
 	TransactionManager &GetTransactionManager();
+	ColumnSegmentCatalog &GetColumnSegmentCatalog();
+
 	DatabaseInstance &GetDatabase() {
 		return db;
 	}
@@ -58,6 +60,7 @@ private:
 	unique_ptr<StorageManager> storage;
 	unique_ptr<Catalog> catalog;
 	unique_ptr<TransactionManager> transaction_manager;
+	unique_ptr<ColumnSegmentCatalog> column_segment_catalog;
 	AttachedDatabaseType type;
 };
 

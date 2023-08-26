@@ -2,6 +2,7 @@
 
 #include "duckdb.h"
 
+#include <iostream>
 #include <atomic>
 #include <unordered_map>
 
@@ -23,13 +24,13 @@ public:
 
 	void AddColumnSegment(ColumnSegment* segment);
 	void AddReadAccess(ColumnSegment* segment);
+	void RemoveColumnSegment(ColumnSegment* segment);
+
 	void Print();
 
 	[[noreturn]] void CompressLowestKSegments();
 
-	inline void EnableBackgroundThreadCompaction() {
-		background_compaction_enabled = true;
-	}
+	void EnableBackgroundThreadCompaction();
 
 	inline bool BackgroundCompactionEnabled() {
 		return background_compaction_enabled;

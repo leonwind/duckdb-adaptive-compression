@@ -79,6 +79,9 @@ public:
 	//! Get the specific Catalog from the AttachedDatabase
 	DUCKDB_API static Catalog &GetCatalog(AttachedDatabase &db);
 
+	//! Get the Column Segment Catalog from the AttachedDatabase
+	static ColumnSegmentCatalog* GetColumnSegmentCatalog();
+
 	DUCKDB_API DependencyManager &GetDependencyManager() {
 		return *dependency_manager;
 	}
@@ -228,13 +231,12 @@ public:
 
 	DUCKDB_API void Verify();
 
-	ColumnSegmentCatalog* GetColumnSegmentCatalog();
 
 private:
 	//! Reference to the database
 	AttachedDatabase &db;
 	//! Catalog with statistics for individual column segments
-	ColumnSegmentCatalog column_segment_catalog;
+	static ColumnSegmentCatalog* column_segment_catalog;
 
 private:
 	CatalogEntryLookup LookupEntryInternal(CatalogTransaction transaction, CatalogType type, const string &schema,

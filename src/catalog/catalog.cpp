@@ -37,6 +37,8 @@
 
 namespace duckdb {
 
+ColumnSegmentCatalog* Catalog::column_segment_catalog = new ColumnSegmentCatalog();
+
 Catalog::Catalog(AttachedDatabase &db)
     : schemas(make_unique<CatalogSet>(*this, make_unique<DefaultSchemaGenerator>(*this))),
       dependency_manager(make_unique<DependencyManager>(*this)), db(db) {}
@@ -62,17 +64,16 @@ void Catalog::Initialize(bool load_builtin) {
 		builtin.Initialize();
 	}
 
-	column_segment_catalog = std::move(ColumnSegmentCatalog());
+	if (!column_segment_catalog->BackgroundCompactionEnabled() &&
+	    DBConfig::GetConfig(db.GetDatabase()).adaptive_succinct_compression_enabled) {
+	}
+	column_segment_catalog->EnableBackgroundThreadCompaction();
+
 	Verify();
 }
 
-ColumnSegmentCatalog* Catalog::GetColumnSegmentCatalog() {
-	if (!column_segment_catalog.BackgroundCompactionEnabled() &&
-	    DBConfig::GetConfig(db.GetDatabase()).adaptive_succinct_compression_enabled) {
-		column_segment_catalog.EnableBackgroundThreadCompaction();
-	}
-
-	return &column_segment_catalog;
+ColumnSegmentCatalog *Catalog::GetColumnSegmentCatalog() {
+	return column_segment_catalog;
 }
 
 

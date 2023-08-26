@@ -17,6 +17,7 @@ def set_custom_style(cparams=None):
               'axes.spines.bottom': True,
               'axes.spines.right': True,
               'axes.spines.top': True,
+              'mathtext.default':  'regular',
               }
 
     if cparams is not None:

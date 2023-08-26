@@ -18,12 +18,24 @@
 
 namespace duckdb {
 
+enum QueryType { LOOKUP, INSERT, UPDATE, DELETE, RANGELOOKUP, UNDEFINED };
+
+template<class KEY_TYPE = uint64_t>
+struct Query {
+  QueryType type;
+  KEY_TYPE key;
+  KEY_TYPE key_range_upper;
+  uint64_t value;
+};
+
 //! Base class for any state that has to be kept by a Benchmark
 struct DuckDBBenchmarkState : public BenchmarkState {
 	DuckDB db;
 	Connection conn;
 	unique_ptr<QueryResult> result;
 	vector<uint32_t> data;
+	std::vector<std::vector<Query<uint64_t>>> workloads;
+
 
 	DuckDBBenchmarkState(string path) : db(path.empty() ? nullptr : path.c_str()), conn(db) {
 		auto &instance = BenchmarkRunner::GetInstance();

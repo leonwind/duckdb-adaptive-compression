@@ -155,7 +155,7 @@ def _plot_ratios_side_by_side(num_elements, sdsl_performance, std_performance, s
         performance_ratio.append(sdsl_performance[i] / std_performance[i])
         size_ratio.append(sdsl_size[i] / std_size[i])
 
-    axis[0].plot(num_elements, performance_ratio, color="red")
+    axis[0].plot(num_elements, performance_ratio, color="black", linestyle="dashed")
     axis[0].set_xscale("log")
     axis[0].set_xlabel("No.\ Elements")
     axis[0].set_ylabel("Perf.\ Ratio")
@@ -165,7 +165,7 @@ def _plot_ratios_side_by_side(num_elements, sdsl_performance, std_performance, s
     axis[0].axvline(x=8388608, ls='-', linewidth=1, color=colors.colors["blue"])
     axis[0].axvline(x=2097152, ls='-', linewidth=1, color=colors.colors["green"])
 
-    axis[1].plot(num_elements, size_ratio, color="red")
+    axis[1].plot(num_elements, size_ratio, color="black", linestyle="dashed")
     axis[1].set_xscale("log")
     axis[1].set_xlabel("No.\ Elements")
     axis[1].set_ylabel("Size Ratio")

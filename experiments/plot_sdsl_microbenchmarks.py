@@ -79,11 +79,11 @@ def create_plots(data):
     l3_sdsl, l3_std = _find_number_elements_fitting_cache(data, L3_CACHE_SIZE)
     caches = VectorCaches(l1_sdsl, l1_std, l3_sdsl, l3_std)
 
-    # _plot(data["num_elements"], [
-    #    ("SDSL Duration", data["sdsl_duration"]),
-    #    ("SDSL Duration Padded", data["sdsl_duration_padded"]),
-    #    ("STD Duration", data["std_duration"])
-    # ], "sdsl_std_duration", caches, ylabel="Time [ms]", show_cache_borders=True, convert_data=1e6)
+    _plot(data["num_elements"], [
+        ("sdsl bit packing", data["sdsl_duration"]),
+        ("sdsl byte packing", data["sdsl_duration_padded"]),
+        ("std", data["std_duration"])
+     ], "sdsl_std_duration", caches, ylabel="Time [ms]", show_cache_borders=True, convert_data=1e6)
 
     # _plot(data["num_elements"], [
     #    ("SDSL Compressed Size", data["sdsl_size_compressed"]),
@@ -91,12 +91,12 @@ def create_plots(data):
     #    ("STD Size", data["std_size"])
     # ], "sdsl_std_memory", caches, ylabel="Size [KiB]", convert_data=1024)
 
-    _plot_ratios_side_by_side(
-        data["num_elements"],
-        data["sdsl_duration"],
-        data["std_duration"],
-        data["sdsl_size_compressed"],
-        data["std_size"])
+    #_plot_ratios_side_by_side(
+    #    data["num_elements"],
+    #    data["sdsl_duration"],
+    #    data["std_duration"],
+    #    data["sdsl_size_compressed"],
+    #    data["std_size"])
 
 
 def _add_cache_label(axis, figure, color, label, x, y):
@@ -140,6 +140,11 @@ def _plot(num_elements, data_per_ds, name, caches: VectorCaches, xlabel="", ylab
     ax.set_ylabel(ylabel)
     ax.set_xscale("log")
     ax.set_yscale("log")
+
+    ax.set_xticklabels([])
+    ax.tick_params(bottom=False)
+    ax.legend(loc="upper left", fontsize="7.3")
+
     plt.tight_layout()
     plt.savefig(f"plots/{name}.pdf")
     os.system(f"pdfcrop plots/{name}.pdf")

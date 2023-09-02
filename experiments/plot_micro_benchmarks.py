@@ -15,6 +15,12 @@ COLORS = {
 }
 PLOT_DIR = "micro_benchmark_plots"
 
+LABEL_NAMES = {
+    "Succinct": "Succinct bit packed",
+    "Succinct Padded": "Succinct byte\npacked",
+    "Uncompressed": "Uncompressed"
+}
+
 
 def _read_csv_file(filename):
     with open(filename) as f:
@@ -92,10 +98,10 @@ def _plot_side_by_side(perf_data, mem_data, name):
     print(perf_data, mem_data)
     for group in GROUPS:
         if group in perf_data:
-            ax[0].bar(group, perf_data[group], color=COLORS[group])
+            ax[0].bar(group, perf_data[group], color=COLORS[group], label=group)
         
         if group in mem_data:
-            ax[1].bar(group, mem_data[group], color=COLORS[group])
+            ax[1].bar(group, mem_data[group], color=COLORS[group], label=LABEL_NAMES[group])
 
     ax[0].set_ylabel("Time [s]")
     ax[1].set_ylabel("Size [GB]")
@@ -103,22 +109,24 @@ def _plot_side_by_side(perf_data, mem_data, name):
     ax[0].set_xticks([])
     ax[1].set_xticks([])
 
-    """
+    ax[0].legend(loc="upper left", fontsize="4.3")
+
+    #"""
     for i, bars in enumerate(ax[0].containers):
-        #if i == 0:
-        #    ax[0].bar_label(bars, fmt='%.1f')
-        #else:
-        ax[0].bar_label(bars, label_type='center', fmt='%.1f')
+        if i == 0:
+            ax[0].bar_label(bars, fmt='%.1f')
+        else:
+            ax[0].bar_label(bars, label_type='center', fmt='%.1f')
 
     for bars in ax[1].containers:
         ax[1].bar_label(bars, label_type='center', fmt='%.1f')
-    """
+    #"""
 
     plt.tight_layout()
     path = f"{PLOT_DIR}/{name}.pdf"
     plt.savefig(path, dpi=400)
     os.system(f"pdfcrop {path} {path}")
-    plt.show()
+    #plt.show()
 
 
 def plot_sequential_scan():
@@ -152,6 +160,6 @@ def plot_scan_oom():
 
 
 if __name__ == "__main__":
-    plot_sequential_scan()
-    plot_zipf_lookup()
+    #plot_sequential_scan()
+    #plot_zipf_lookup()
     plot_scan_oom()

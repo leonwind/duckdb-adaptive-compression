@@ -37,8 +37,10 @@ def read_file(filename):
 
 def compare(results, workload_times, ylabel):
     _colors = [colors.colors["green"], colors.colors["red"], colors.colors["blue"]]
+    labels = ["Uncompressed", "Adaptive", "Succinct"]
+
     for i, result in enumerate(results):
-        plt.plot(*zip(*result), label=str(i), color=_colors[i])
+        plt.plot(*zip(*result), color=_colors[i], label=labels[i])
 
     for i, workload in enumerate(workload_times):
         for phase, time in enumerate(workload[1:]):
@@ -66,8 +68,13 @@ def compare(results, workload_times, ylabel):
     #    bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec="black"))
 
 
+    plt.legend(loc="upper right", fontsize="4.5")
+
+    plt.tick_params(bottom=False)
+    plt.xticks(range(6), [])
+
     plt.ylabel(ylabel)
-    plt.xlabel("Time [min]")
+    #plt.xlabel("Time [min]")
     #plt.legend()
     plt.tight_layout()
 
@@ -76,7 +83,7 @@ def compare(results, workload_times, ylabel):
     plt.savefig(filename, dpi=400)
     os.system(f"pdfcrop {filename} {filename}")
 
-    plt.show()
+    #plt.show()
 
 
 def _add_cache_label(color, label, x, y):
@@ -99,7 +106,7 @@ if __name__ == "__main__":
         workload_switching_times,
         "QPS")
 
-    compare(
-        [not_succinct_timeseries[1], succinct_adaptive_timeseries[1], succinct_not_adaptive_timeseries[1]], 
-        workload_switching_times, 
-        "Size [MB]")
+    #compare(
+    #    [not_succinct_timeseries[1], succinct_adaptive_timeseries[1], succinct_not_adaptive_timeseries[1]], 
+    #    workload_switching_times, 
+    #    "Size [MB]")

@@ -75,12 +75,14 @@ def plot_data(data_dict):
         default.append((curr[0], curr[1][DEFAULT_IDX][0]))
 
     fig, ax = plt.subplots(nrows=1, ncols=2)
-    ax[0].plot(*zip(*adaptive), color=COLORS["adaptive"])
-    ax[0].plot(*zip(*succinct), color=COLORS["succinct"])
-    ax[0].plot(*zip(*default),color=COLORS["uncompressed"])
+    ax[0].plot(*zip(*default),color=COLORS["uncompressed"], label="Uncompressed")
+    ax[0].plot(*zip(*adaptive), color=COLORS["adaptive"], label="Adaptive")
+    ax[0].plot(*zip(*succinct), color=COLORS["succinct"], label="Succinct")
 
     ax[0].set_xlabel("Skew factor $k$")
     ax[0].set_ylabel("QPS")
+
+    ax[0].legend(loc="lower right", fontsize="5.2")
 
     final_mem = data[-1]
     mem_data = [

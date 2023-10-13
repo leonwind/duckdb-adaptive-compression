@@ -68,7 +68,9 @@ def compare(results, workload_times, ylabel):
     #    bbox=dict(boxstyle='round,pad=0.2', linewidth=0.4, fc="w", ec="black"))
 
 
-    plt.legend(loc="upper right", fontsize="4.5")
+    #plt.legend(loc="upper center", bbox_to_anchor=(0.5, 1.15), ncol=3)
+    plt.legend(bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
+                mode="expand", borderaxespad=0.2, ncol=3, prop={'size': 8})
 
     plt.tick_params(bottom=False)
     plt.xticks(range(6), [])

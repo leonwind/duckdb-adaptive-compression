@@ -109,11 +109,11 @@ def _plot_side_by_side(perf_data, mem_data, name):
     ax[0].set_xticks([])
     ax[1].set_xticks([])
 
-    ax[0].legend(loc="upper left", fontsize="4.3")
+    #ax[0].legend(loc="upper left", fontsize="4.3")
 
     #"""
     for i, bars in enumerate(ax[0].containers):
-        if i == 0:
+        if i == 0 and False:
             ax[0].bar_label(bars, fmt='%.1f')
         else:
             ax[0].bar_label(bars, label_type='center', fmt='%.1f')
@@ -121,8 +121,18 @@ def _plot_side_by_side(perf_data, mem_data, name):
     for bars in ax[1].containers:
         ax[1].bar_label(bars, label_type='center', fmt='%.1f')
     #"""
+    
+    handles, labels = ax[0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.57, 1.01),
+            borderaxespad=0.2, ncol=3, prop={'size': 8})
+    
+    print(fig.get_size_inches()) 
+    fig.tight_layout()
+    fig.set_size_inches(3.39, 1.4)
+    plt.subplots_adjust(top=0.85)
+    print(fig.get_size_inches()) 
 
-    plt.tight_layout()
+    #plt.tight_layout()
     path = f"{PLOT_DIR}/{name}.pdf"
     plt.savefig(path, dpi=400)
     os.system(f"pdfcrop {path} {path}")
@@ -160,6 +170,6 @@ def plot_scan_oom():
 
 
 if __name__ == "__main__":
-    #plot_sequential_scan()
+    plot_sequential_scan()
     #plot_zipf_lookup()
-    plot_scan_oom()
+    #plot_scan_oom()

@@ -82,7 +82,7 @@ def plot_data(data_dict):
     ax[0].set_xlabel("Skew factor $k$")
     ax[0].set_ylabel("QPS")
 
-    ax[0].legend(loc="lower right", fontsize="5.2")
+    #ax[0].legend(loc="lower right", fontsize="5.2")
 
     final_mem = data[-1]
     mem_data = [
@@ -100,13 +100,24 @@ def plot_data(data_dict):
     for bars in ax[1].containers:
         ax[1].bar_label(bars, label_type='center', fmt='%.1f')
 
+    handles, labels = ax[0].get_legend_handles_labels()
+    #plt.legend(handles, labels, bbox_to_anchor=(0, 1.02, 1, 0.2), loc="lower left",
+    #            mode="expand", borderaxespad=0.2, ncol=3, prop={'size': 8})
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.57, 1.01),
+            borderaxespad=0.2, ncol=3, prop={'size': 8})
+
+    print(fig.get_size_inches()) 
     fig.tight_layout()
+    fig.set_size_inches(3.39, 1.8)
+    plt.subplots_adjust(top=0.85)
+    print(fig.get_size_inches()) 
+
 
     filename = "diff_zipf_skew.pdf"
     fig.savefig(filename, dpi=400)
     os.system(f"pdfcrop {filename} {filename}")
 
-    plt.show()
+    #plt.show()
 
 
 if __name__ == "__main__":

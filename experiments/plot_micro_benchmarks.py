@@ -123,13 +123,13 @@ def _plot_side_by_side(perf_data, mem_data, name):
     #"""
     
     handles, labels = ax[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.57, 1.01),
+    fig.legend(handles, labels, loc="upper center", bbox_to_anchor=(0.56, 1.01),
             borderaxespad=0.2, ncol=3, prop={'size': 8})
     
     print(fig.get_size_inches()) 
     fig.tight_layout()
-    fig.set_size_inches(3.39, 1.4)
-    plt.subplots_adjust(top=0.85)
+    fig.set_size_inches(3.39, 1.3)
+    plt.subplots_adjust(top=0.84)
     print(fig.get_size_inches()) 
 
     #plt.tight_layout()

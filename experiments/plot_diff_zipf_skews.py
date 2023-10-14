@@ -108,8 +108,8 @@ def plot_data(data_dict):
 
     print(fig.get_size_inches()) 
     fig.tight_layout()
-    fig.set_size_inches(3.39, 1.8)
-    plt.subplots_adjust(top=0.85)
+    fig.set_size_inches(3.39, 1.6)
+    plt.subplots_adjust(top=0.87)
     print(fig.get_size_inches()) 
 
 

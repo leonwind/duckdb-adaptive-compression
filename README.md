@@ -1,5 +1,5 @@
 # AdaCom: Adaptive Compression For Databases
-This is an exemplary implementation of **AdaCom**, adaptively compressing infrequently accessed column segments using succinct encoding, in [DuckDB](https://github.com/duckdb/duckdb).
+This is our implementation of our paper "Adaptive Compression For Databases" (EDBT '24), where we adaptively compress infrequently accessed column segments using succinct encoding, in [DuckDB](https://github.com/duckdb/duckdb).
 
 ## Installation
 Our implementation uses the [Succinct Data Structure Library (SDSL)](https://github.com/simongog/sdsl-lite/), and it can be installed with
